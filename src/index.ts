@@ -98,9 +98,51 @@ app.get('/api/card/:username', async (c) => {
     });
 });
 
+import { getCookie } from 'hono/cookie';
+import { verifySession } from './shared/utils';
+
+app.post('/api/pet', async (c) => {
+    const sessionCookie = getCookie(c, 'session');
+    if (!sessionCookie) return c.redirect('/auth/login');
+
+    const userId = await verifySession(sessionCookie, c.env.SESSION_SIGNING_KEY);
+    if (!userId) return c.redirect('/auth/login');
+
+    const { name, difficulty = 'normal' } = await c.req.parseBody();
+    if (!name || typeof name !== 'string') {
+        return c.json({ error: 'Valid pet name required' }, 400);
+    }
+
+    const db = new Database(c.env.DB);
+    const existingPet = await db.fetchPet(userId);
+    if (existingPet) return c.redirect('/dashboard');
+
+    await db.createPet({
+        userId,
+        name: name.substring(0, 20),
+        difficulty: difficulty as any,
+    });
+
+    return c.redirect('/dashboard');
+});
+
 app.get('/dashboard', async (c) => {
-    // TODO: Verify session and fetch pet data
-    return c.html('<h1>Dashboard Placeholder</h1><p>MVP Progressing...</p>');
+    const sessionCookie = getCookie(c, 'session');
+    if (!sessionCookie) return c.redirect('/auth/login');
+
+    const userId = await verifySession(sessionCookie, c.env.SESSION_SIGNING_KEY);
+    if (!userId) return c.redirect('/auth/login');
+
+    const db = new Database(c.env.DB);
+    const pet = await db.fetchPet(userId);
+    if (!pet) return c.redirect('/onboarding');
+
+    return c.html(`
+        <h1>Dashboard</h1>
+        <p>Welcome back! Your pet <strong>${pet.name}</strong> is doing great.</p>
+        <p>Level: ${Math.floor(Math.sqrt(pet.xp / 10))}</p>
+        <a href="/u/${pet.name}">Public Profile</a>
+    `);
 });
 
 app.get('/u/:username', async (c) => {
@@ -139,7 +181,24 @@ app.post('/api/pet/retire', async (c) => {
 });
 
 app.get('/onboarding', async (c) => {
-    return c.html('<h1>Onboarding Placeholder</h1><form action="/api/pet" method="POST"><input name="name" placeholder="Pet Name"/><button>Adopt</button></form>');
+    const sessionCookie = getCookie(c, 'session');
+    if (!sessionCookie) return c.redirect('/auth/login');
+
+    const userId = await verifySession(sessionCookie, c.env.SESSION_SIGNING_KEY);
+    if (!userId) return c.redirect('/auth/login');
+
+    return c.html(`
+        <h1>Adopt your Petgotchi</h1>
+        <form action="/api/pet" method="POST">
+            <input name="name" placeholder="Pet Name" required maxlength="20"/>
+            <select name="difficulty">
+                <option value="easy">Easy</option>
+                <option value="normal" selected>Normal</option>
+                <option value="hard">Hard</option>
+            </select>
+            <button type="submit">Adopt</button>
+        </form>
+    `);
 });
 
 
