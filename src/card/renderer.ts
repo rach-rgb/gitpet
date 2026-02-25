@@ -19,44 +19,47 @@ export function renderPetCard(pet: Pet): string {
   let sprite = eggSprite;
   // TODO: Add conditional logic for other stages/traits
 
-  const spriteSvg = renderer.render(sprite, palette, 5); // Scale 5 for 16x16 -> 80x80
+  const spriteSvg = renderer.render(sprite, palette, 10); // Scale 10 for 16x16 -> 160x160
 
   return `
-    <svg width="400" height="160" viewBox="0 0 400 160" xmlns="http://www.w3.org/2000/svg">
+    <svg width="420" height="200" viewBox="0 0 420 200" xmlns="http://www.w3.org/2000/svg">
       <defs>
         <style>
-          .stat-text { font-family: sans-serif; font-size: 10px; fill: #aaa; }
-          .name-text { font-family: sans-serif; font-size: 18px; font-weight: bold; fill: #fff; }
-          .meta-text { font-family: sans-serif; font-size: 12px; fill: #888; }
+          .stat-text { font-family: sans-serif; font-size: 11px; fill: #aaa; }
+          .name-text { font-family: sans-serif; font-size: 22px; font-weight: bold; fill: #fff; }
+          .meta-text { font-family: sans-serif; font-size: 13px; fill: #888; }
+          .footer-text { font-family: sans-serif; font-size: 10px; fill: #444; }
         </style>
       </defs>
-      <rect width="400" height="160" rx="10" fill="#1a1a2e" />
+      <rect width="420" height="200" rx="16" fill="#1a1a2e" />
       
-      <!-- Pet Sprite -->
+      <!-- Pet Sprite (60% weight) -->
       <g transform="translate(20, 20)">
         ${spriteSvg}
       </g>
       
-      <!-- Pet Info -->
-      <text x="120" y="40" class="name-text">${name}</text>
-      <text x="380" y="40" class="meta-text" text-anchor="end">Lv.${level} / ${difficulty.toUpperCase()}</text>
-      
-      <!-- Stats Bars -->
-      <g transform="translate(120, 60)">
-        <text y="0" class="stat-text">Hunger</text>
-        <rect y="5" width="200" height="8" rx="4" fill="#333" />
-        <rect y="5" width="${hunger * 2}" height="8" rx="4" fill="#ff9800" />
+      <!-- Content Area (40% weight) -->
+      <g transform="translate(200, 30)">
+        <text x="0" y="0" class="name-text">${name}</text>
+        <text x="0" y="25" class="meta-text">Lv.${level} / ${difficulty.toUpperCase()}</text>
         
-        <text y="30" class="stat-text">Happiness</text>
-        <rect y="35" width="200" height="8" rx="4" fill="#333" />
-        <rect y="35" width="${happiness * 2}" height="8" rx="4" fill="#2196f3" />
+        <!-- Stats Bars -->
+        <g transform="translate(0, 50)">
+          <text y="0" class="stat-text">Hunger</text>
+          <rect y="5" width="180" height="10" rx="5" fill="#333" />
+          <rect y="5" width="${hunger * 1.8}" height="10" rx="5" fill="#ff9800" />
+          
+          <text y="35" class="stat-text">Happiness</text>
+          <rect y="40" width="180" height="10" rx="5" fill="#333" />
+          <rect y="40" width="${happiness * 1.8}" height="10" rx="5" fill="#2196f3" />
+          
+          <text y="70" class="stat-text">Health</text>
+          <rect y="75" width="180" height="10" rx="5" fill="#333" />
+          <rect y="75" width="${health * 1.8}" height="10" rx="5" fill="#4caf50" />
+        </g>
         
-        <text y="60" class="stat-text">Health</text>
-        <rect y="65" width="200" height="8" rx="4" fill="#333" />
-        <rect y="65" width="${health * 2}" height="8" rx="4" fill="#4caf50" />
+        <text x="0" y="150" class="footer-text">petgotchi.dev • ${trait || 'Youngling'}</text>
       </g>
-      
-      <text x="20" y="145" font-family="sans-serif" font-size="10" fill="#444">petgotchi.dev • ${trait || 'Youngling'}</text>
     </svg>
   `.trim();
 }
