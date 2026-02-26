@@ -55,6 +55,11 @@ export class Database {
         return row ? mapUser(row) : null;
     }
 
+    async fetchUserByUserId(userId: string): Promise<User | null> {
+        const row = await this.db.prepare('SELECT * FROM users WHERE user_id = ?').bind(userId).first<any>();
+        return row ? mapUser(row) : null;
+    }
+
     async upsertUser(user: any): Promise<User> {
         const now = Math.floor(Date.now() / 1000);
         const userId = user.userId || crypto.randomUUID();

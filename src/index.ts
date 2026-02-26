@@ -2,9 +2,10 @@ import { Hono } from 'hono';
 import { Database } from './shared/db';
 import { GithubAuth } from './auth/github';
 import { encryptToken, signSession, verifySession } from './shared/utils';
-import { setCookie, getCookie } from 'hono/cookie';
+import { setCookie, getCookie, deleteCookie } from 'hono/cookie';
 import { syncAndDecay } from './pet/sync';
 import { renderPetCard, renderPlaceholderCard } from './card/renderer';
+import { renderLayout } from './shared/style';
 
 type Bindings = {
     DB: D1Database;
@@ -16,7 +17,45 @@ type Bindings = {
 
 const app = new Hono<{ Bindings: Bindings }>();
 
-app.get('/', (c) => c.text('Gitpet API Live'));
+/**
+ * Helper to get the authenticated user for layout rendering.
+ */
+async function getAuthUser(c: any, db: Database) {
+    const sessionCookie = getCookie(c, 'session');
+    if (!sessionCookie) return null;
+    const userId = await verifySession(sessionCookie, c.env.SESSION_SIGNING_KEY);
+    if (!userId) return null;
+    return await db.fetchUserByUserId(userId);
+}
+
+app.get('/', async (c) => {
+    const db = new Database(c.env.DB);
+    const user = await getAuthUser(c, db);
+
+    return c.html(renderLayout('Home', `
+        <div class="glass-card" style="text-align: center;">
+            <h1>Grow your Pet with Code 👾</h1>
+            <p style="font-size: 1.25rem; color: var(--text-muted); margin-bottom: 2rem;">
+                Gitpet uses your GitHub activity to feed and level up your virtual companion.
+            </p>
+            ${user ? `
+                <a href="/dashboard" class="btn">Go to Dashboard</a>
+            ` : `
+                <a href="/auth/login" class="btn">Connect with GitHub</a>
+            `}
+        </div>
+        <div style="margin-top: 3rem; display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+            <div class="glass-card" style="padding: 1.5rem;">
+                <h3>Commit to Feed</h3>
+                <p style="color: var(--text-muted); font-size: 0.9rem;">Your daily commits translate to hunger points, keeping your pet healthy.</p>
+            </div>
+            <div class="glass-card" style="padding: 1.5rem;">
+                <h3>Unlock Traits</h3>
+                <p style="color: var(--text-muted); font-size: 0.9rem;">Depending on your coding style, your pet evolves with unique traits.</p>
+            </div>
+        </div>
+    `, user ? { username: user.githubUsername } : undefined));
+});
 
 // Auth Routes
 app.get('/auth/login', async (c) => {
@@ -29,19 +68,20 @@ app.get('/auth/login', async (c) => {
     return c.redirect(url);
 });
 
+app.get('/auth/logout', (c) => {
+    deleteCookie(c, 'session', { path: '/' });
+    return c.redirect('/');
+});
+
 app.get('/auth/callback', async (c) => {
     const code = c.req.query('code');
     const state = c.req.query('state');
 
-    if (!code || !state) {
-        return c.json({ error: 'Missing code or state' }, 400);
-    }
+    if (!code || !state) return c.json({ error: 'Missing code or state' }, 400);
 
     const db = new Database(c.env.DB);
     const isStateValid = await db.consumeOAuthState(state);
-    if (!isStateValid) {
-        return c.json({ error: 'Invalid or expired state' }, 403);
-    }
+    if (!isStateValid) return c.json({ error: 'Invalid or expired state' }, 403);
 
     const auth = new GithubAuth(c.env.GITHUB_CLIENT_ID, c.env.GITHUB_CLIENT_SECRET);
     try {
@@ -61,19 +101,11 @@ app.get('/auth/callback', async (c) => {
             secure: true,
             sameSite: 'Lax',
             path: '/',
-            maxAge: 60 * 60 * 24 * 30, // 30 days
+            maxAge: 60 * 60 * 24 * 30,
         });
 
-        console.log(`[Auth] Session created and cookie set for: ${user.githubUsername}`);
-
         const pet = await db.fetchPet(user.userId);
-        if (!pet) {
-            console.log(`[Auth] No pet found for ${user.githubUsername}, redirecting to /onboarding`);
-            return c.redirect('/onboarding');
-        }
-
-        console.log(`[Auth] Pet found for ${user.githubUsername}, redirecting to /dashboard`);
-        return c.redirect('/dashboard');
+        return c.redirect(pet ? '/dashboard' : '/onboarding');
     } catch (error) {
         console.error('OAuth Error:', error);
         return c.json({ error: 'OAuth exchange failed' }, 502);
@@ -88,14 +120,10 @@ app.get('/api/card/:username', async (c) => {
         .bind(username)
         .first<any>();
 
-    if (!user) {
-        return c.body(renderPlaceholderCard(), 200, { 'Content-Type': 'image/svg+xml' });
-    }
+    if (!user) return c.body(renderPlaceholderCard(), 200, { 'Content-Type': 'image/svg+xml' });
 
     const pet = await db.fetchPet(user.user_id);
-    if (!pet) {
-        return c.body(renderPlaceholderCard(), 200, { 'Content-Type': 'image/svg+xml' });
-    }
+    if (!pet) return c.body(renderPlaceholderCard(), 200, { 'Content-Type': 'image/svg+xml' });
 
     return c.body(renderPetCard(pet), 200, {
         'Content-Type': 'image/svg+xml',
@@ -104,29 +132,18 @@ app.get('/api/card/:username', async (c) => {
 });
 
 app.post('/api/pet', async (c) => {
-    const sessionCookie = getCookie(c, 'session');
-    if (!sessionCookie) {
-        console.log('[API/Pet] No session cookie found');
-        return c.redirect('/auth/login');
-    }
-
-    const userId = await verifySession(sessionCookie, c.env.SESSION_SIGNING_KEY);
-    if (!userId) {
-        console.log('[API/Pet] Invalid session');
-        return c.redirect('/auth/login');
-    }
+    const db = new Database(c.env.DB);
+    const user = await getAuthUser(c, db);
+    if (!user) return c.redirect('/auth/login');
 
     const { name, difficulty = 'normal' } = await c.req.parseBody();
-    if (!name || typeof name !== 'string') {
-        return c.json({ error: 'Valid pet name required' }, 400);
-    }
+    if (!name || typeof name !== 'string') return c.json({ error: 'Valid pet name required' }, 400);
 
-    const db = new Database(c.env.DB);
-    const existingPet = await db.fetchPet(userId);
+    const existingPet = await db.fetchPet(user.userId);
     if (existingPet) return c.redirect('/dashboard');
 
     await db.createPet({
-        userId,
+        userId: user.userId,
         name: name.substring(0, 20),
         difficulty: difficulty as any,
     });
@@ -135,62 +152,65 @@ app.post('/api/pet', async (c) => {
 });
 
 app.get('/dashboard', async (c) => {
-    const sessionCookie = getCookie(c, 'session');
-    if (!sessionCookie) {
-        console.log('[Dashboard] No session cookie found');
-        return c.redirect('/auth/login');
-    }
-
-    const userId = await verifySession(sessionCookie, c.env.SESSION_SIGNING_KEY);
-    if (!userId) {
-        console.log('[Dashboard] Invalid session');
-        return c.redirect('/auth/login');
-    }
-
     const db = new Database(c.env.DB);
-    const pet = await db.fetchPet(userId);
+    const user = await getAuthUser(c, db);
+    if (!user) return c.redirect('/auth/login');
+
+    const pet = await db.fetchPet(user.userId);
     if (!pet) return c.redirect('/onboarding');
 
-    return c.html(`
-        <h1>Dashboard</h1>
-        <p>Welcome back! Your pet <strong>${pet.name}</strong> is doing great.</p>
-        <p>Level: ${Math.floor(Math.sqrt(pet.xp / 10))}</p>
-        <a href="/u/${pet.name}">Public Profile</a>
-    `);
+    return c.html(renderLayout('Dashboard', `
+        <h1>Your Gitpet</h1>
+        <div class="glass-card" style="margin-bottom: 2rem;">
+            <div style="display: flex; justify-content: center; margin-bottom: 1.5rem;">
+                <img src="/api/card/${user.githubUsername}" alt="Pet Card" style="border-radius: 1rem; width: 100%; max-width: 420px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2);"/>
+            </div>
+            <div style="text-align: center;">
+                <h2>${pet.name}</h2>
+                <div style="display: flex; justify-content: center; gap: 1rem;">
+                    <a href="/u/${user.githubUsername}" class="btn">View Public Profile</a>
+                    <form action="/api/pet/retire?petId=${pet.petId}" method="POST" onsubmit="return confirm('Really retire your pet?')">
+                        <button type="submit" class="btn btn-secondary">Retire Pet</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    `, { username: user.githubUsername }));
 });
 
 app.get('/onboarding', async (c) => {
-    const sessionCookie = getCookie(c, 'session');
-    if (!sessionCookie) {
-        console.log('[Onboarding] No session cookie found');
-        return c.redirect('/auth/login');
-    }
+    const db = new Database(c.env.DB);
+    const user = await getAuthUser(c, db);
+    if (!user) return c.redirect('/auth/login');
 
-    const userId = await verifySession(sessionCookie, c.env.SESSION_SIGNING_KEY);
-    if (!userId) {
-        console.log('[Onboarding] Invalid session (verification failed)');
-        return c.redirect('/auth/login');
-    }
+    const pet = await db.fetchPet(user.userId);
+    if (pet) return c.redirect('/dashboard');
 
-    console.log(`[Onboarding] Session verified for userId: ${userId}`);
-
-    return c.html(`
-        <h1>Adopt your Gitpet</h1>
-        <form action="/api/pet" method="POST">
-            <input name="name" placeholder="Pet Name" required maxlength="20"/>
-            <select name="difficulty">
-                <option value="easy">Easy</option>
-                <option value="normal" selected>Normal</option>
-                <option value="hard">Hard</option>
-            </select>
-            <button type="submit">Adopt</button>
-        </form>
-    `);
+    return c.html(renderLayout('Adopt', `
+        <div class="glass-card">
+            <h1>Adopt your Gitpet</h1>
+            <p style="color: var(--text-muted); margin-bottom: 2rem;">Give your new companion a name and choose a difficulty level. Difficulty affects how much code you need to write to keep them happy!</p>
+            <form action="/api/pet" method="POST">
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Pet Name</label>
+                <input name="name" placeholder="E.g. Octocat" required maxlength="20"/>
+                
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Difficulty</label>
+                <select name="difficulty">
+                    <option value="easy">Easy (Casual coder)</option>
+                    <option value="normal" selected>Normal (Standard activity)</option>
+                    <option value="hard">Hard (Hardcore committer)</option>
+                </select>
+                
+                <button type="submit" class="btn" style="width: 100%;">Finalize Adoption</button>
+            </form>
+        </div>
+    `, { username: user.githubUsername }));
 });
 
 app.get('/u/:username', async (c) => {
     const username = c.req.param('username');
     const db = new Database(c.env.DB);
+    const authUser = await getAuthUser(c, db);
 
     const user = await c.env.DB.prepare('SELECT * FROM users WHERE github_username = ?')
         .bind(username)
@@ -201,12 +221,46 @@ app.get('/u/:username', async (c) => {
     const pet = await db.fetchPet(user.user_id);
     const hof = await db.fetchHallOfFame(user.user_id);
 
-    return c.html(`
-    <h1>${username}'s Pets</h1>
-    ${pet ? `<h2>Active: ${pet.name} (Lv.${Math.floor(Math.sqrt(pet.xp / 10))})</h2>` : '<p>No active pet.</p>'}
-    <h2>Hall of Fame</h2>
-    <ul>${hof.map((h: any) => `<li>${h.name} - ${h.trait} (${h.xp} XP)</li>`).join('')}</ul>
-  `);
+    return c.html(renderLayout(`${username}'s Pets`, `
+        <div style="text-align: center; margin-bottom: 3rem;">
+            <h1>${username}'s Profile</h1>
+        </div>
+        
+        ${pet ? `
+            <div class="glass-card" style="margin-bottom: 2rem;">
+                <h2>Active Pet</h2>
+                <div style="display: flex; justify-content: center;">
+                    <img src="/api/card/${username}" alt="Pet Card" style="border-radius: 1rem; width: 100%; max-width: 420px;"/>
+                </div>
+            </div>
+        ` : `
+            <div class="glass-card" style="text-align: center;">
+                <p style="color: var(--text-muted);">No active pet found.</p>
+            </div>
+        `}
+        
+        <div class="glass-card" style="margin-top: 2rem;">
+            <h2>Hall of Fame</h2>
+            ${hof.length > 0 ? `
+                <ul style="list-style: none;">
+                    ${hof.map((h: any) => `
+                        <li style="padding: 1rem 0; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <div style="font-weight: 800; color: var(--primary);">${h.name}</div>
+                                <div style="font-size: 0.8rem; color: var(--text-muted);">${h.trait} • ${h.difficulty.toUpperCase()}</div>
+                            </div>
+                            <div style="text-align: right;">
+                                <div style="font-weight: 600;">${h.xp} XP</div>
+                                <div style="font-size: 0.8rem; color: var(--text-muted);">Retired: ${new Date(h.retired_at * 1000).toLocaleDateString()}</div>
+                            </div>
+                        </li>
+                    `).join('')}
+                </ul>
+            ` : `
+                <p style="color: var(--text-muted);">No retired pets yet.</p>
+            `}
+        </div>
+    `, authUser ? { username: authUser.githubUsername } : undefined));
 });
 
 app.post('/api/pet/retire', async (c) => {
@@ -217,7 +271,7 @@ app.post('/api/pet/retire', async (c) => {
     try {
         const { retirePet } = await import('./pet/prestige');
         const result = await retirePet(db, petId);
-        return c.json(result);
+        return c.redirect('/dashboard');
     } catch (error) {
         return c.json({ error: (error as Error).message }, 400);
     }
