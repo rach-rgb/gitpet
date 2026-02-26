@@ -33,3 +33,4 @@ Thumbs.db
 migrations/*.local.sql
 .gemini/
 .agent
+.dev.vars

@@ -1,8 +1,8 @@
 import { Hono } from 'hono';
 import { Database } from './shared/db';
 import { GithubAuth } from './auth/github';
-import { encryptToken, signSession } from './shared/utils';
-import { setCookie } from 'hono/cookie';
+import { encryptToken, signSession, verifySession } from './shared/utils';
+import { setCookie, getCookie } from 'hono/cookie';
 import { syncAndDecay } from './pet/sync';
 import { renderPetCard, renderPlaceholderCard } from './card/renderer';
 
@@ -16,7 +16,7 @@ type Bindings = {
 
 const app = new Hono<{ Bindings: Bindings }>();
 
-app.get('/', (c) => c.text('Petgotchi API Live'));
+app.get('/', (c) => c.text('Gitpet API Live'));
 
 // Auth Routes
 app.get('/auth/login', async (c) => {
@@ -59,15 +59,20 @@ app.get('/auth/callback', async (c) => {
         setCookie(c, 'session', sessionId, {
             httpOnly: true,
             secure: true,
-            sameSite: 'Strict',
+            sameSite: 'Lax',
+            path: '/',
             maxAge: 60 * 60 * 24 * 30, // 30 days
         });
 
+        console.log(`[Auth] Session created and cookie set for: ${user.githubUsername}`);
+
         const pet = await db.fetchPet(user.userId);
         if (!pet) {
+            console.log(`[Auth] No pet found for ${user.githubUsername}, redirecting to /onboarding`);
             return c.redirect('/onboarding');
         }
 
+        console.log(`[Auth] Pet found for ${user.githubUsername}, redirecting to /dashboard`);
         return c.redirect('/dashboard');
     } catch (error) {
         console.error('OAuth Error:', error);
@@ -98,15 +103,18 @@ app.get('/api/card/:username', async (c) => {
     });
 });
 
-import { getCookie } from 'hono/cookie';
-import { verifySession } from './shared/utils';
-
 app.post('/api/pet', async (c) => {
     const sessionCookie = getCookie(c, 'session');
-    if (!sessionCookie) return c.redirect('/auth/login');
+    if (!sessionCookie) {
+        console.log('[API/Pet] No session cookie found');
+        return c.redirect('/auth/login');
+    }
 
     const userId = await verifySession(sessionCookie, c.env.SESSION_SIGNING_KEY);
-    if (!userId) return c.redirect('/auth/login');
+    if (!userId) {
+        console.log('[API/Pet] Invalid session');
+        return c.redirect('/auth/login');
+    }
 
     const { name, difficulty = 'normal' } = await c.req.parseBody();
     if (!name || typeof name !== 'string') {
@@ -128,10 +136,16 @@ app.post('/api/pet', async (c) => {
 
 app.get('/dashboard', async (c) => {
     const sessionCookie = getCookie(c, 'session');
-    if (!sessionCookie) return c.redirect('/auth/login');
+    if (!sessionCookie) {
+        console.log('[Dashboard] No session cookie found');
+        return c.redirect('/auth/login');
+    }
 
     const userId = await verifySession(sessionCookie, c.env.SESSION_SIGNING_KEY);
-    if (!userId) return c.redirect('/auth/login');
+    if (!userId) {
+        console.log('[Dashboard] Invalid session');
+        return c.redirect('/auth/login');
+    }
 
     const db = new Database(c.env.DB);
     const pet = await db.fetchPet(userId);
@@ -142,6 +156,35 @@ app.get('/dashboard', async (c) => {
         <p>Welcome back! Your pet <strong>${pet.name}</strong> is doing great.</p>
         <p>Level: ${Math.floor(Math.sqrt(pet.xp / 10))}</p>
         <a href="/u/${pet.name}">Public Profile</a>
+    `);
+});
+
+app.get('/onboarding', async (c) => {
+    const sessionCookie = getCookie(c, 'session');
+    if (!sessionCookie) {
+        console.log('[Onboarding] No session cookie found');
+        return c.redirect('/auth/login');
+    }
+
+    const userId = await verifySession(sessionCookie, c.env.SESSION_SIGNING_KEY);
+    if (!userId) {
+        console.log('[Onboarding] Invalid session (verification failed)');
+        return c.redirect('/auth/login');
+    }
+
+    console.log(`[Onboarding] Session verified for userId: ${userId}`);
+
+    return c.html(`
+        <h1>Adopt your Gitpet</h1>
+        <form action="/api/pet" method="POST">
+            <input name="name" placeholder="Pet Name" required maxlength="20"/>
+            <select name="difficulty">
+                <option value="easy">Easy</option>
+                <option value="normal" selected>Normal</option>
+                <option value="hard">Hard</option>
+            </select>
+            <button type="submit">Adopt</button>
+        </form>
     `);
 });
 
@@ -179,28 +222,6 @@ app.post('/api/pet/retire', async (c) => {
         return c.json({ error: (error as Error).message }, 400);
     }
 });
-
-app.get('/onboarding', async (c) => {
-    const sessionCookie = getCookie(c, 'session');
-    if (!sessionCookie) return c.redirect('/auth/login');
-
-    const userId = await verifySession(sessionCookie, c.env.SESSION_SIGNING_KEY);
-    if (!userId) return c.redirect('/auth/login');
-
-    return c.html(`
-        <h1>Adopt your Petgotchi</h1>
-        <form action="/api/pet" method="POST">
-            <input name="name" placeholder="Pet Name" required maxlength="20"/>
-            <select name="difficulty">
-                <option value="easy">Easy</option>
-                <option value="normal" selected>Normal</option>
-                <option value="hard">Hard</option>
-            </select>
-            <button type="submit">Adopt</button>
-        </form>
-    `);
-});
-
 
 export default {
     fetch: app.fetch,
