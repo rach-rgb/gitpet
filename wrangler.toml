@@ -5,7 +5,7 @@ compatibility_date = "2024-02-25"
 [[d1_databases]]
 binding = "DB"
 database_name = "petgotchi-db"
-database_id = "your-database-id-here"
+database_id = "2a828e7c-33f4-4e04-b430-fe62300da505"
 
 [triggers]
 crons = ["*/30 * * * *"] # Every 30 minutes
