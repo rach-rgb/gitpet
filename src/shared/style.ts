@@ -189,6 +189,9 @@ export function renderLayout(title: string, content: string, user?: { username: 
             ${user ? `
                 <a href="/dashboard">Dashboard</a>
                 <a href="/u/${user.username}">Profile</a>
+            ` : ''}
+            <a href="/guide">Guide</a>
+            ${user ? `
                 <a href="/auth/logout" class="btn btn-secondary" style="padding: 0.4rem 0.8rem; font-size: 0.9rem;">Logout</a>
             ` : `
                 <a href="/auth/login" class="btn">Start with GitHub</a>

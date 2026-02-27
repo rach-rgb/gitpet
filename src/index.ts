@@ -165,45 +165,83 @@ app.get('/dashboard', async (c) => {
     const pet = await db.fetchPet(user.userId);
     if (!pet) return c.redirect('/onboarding');
 
+    const activities = await db.fetchRecentActivity(user.userId, 5);
+
+    const getEventIcon = (type: string) => {
+        switch (type.toLowerCase()) {
+            case 'push': return '📦';
+            case 'pull_request': return '🔀';
+            case 'pull_request_review': return '👁️';
+            case 'issue': return '🎫';
+            default: return '⚡';
+        }
+    };
+
     return c.html(renderLayout('Dashboard', `
-        <h1 style="text-align: center; margin-bottom: 2rem;">My Gitpet</h1>
-        <div class="glass-card" style="margin-bottom: 2rem;">
+        <div class="glass-card" style="margin-bottom: 2rem; position: relative; padding-bottom: 4rem;">
             <div style="display: flex; justify-content: center; margin-bottom: 1.5rem;">
                 <img src="/api/card/${user.githubUsername}" alt="Pet Card" style="border-radius: 1rem; width: 100%; max-width: 420px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2);"/>
             </div>
-            <div style="text-align: center;">
-                <h2 style="color: var(--text); font-weight: 800; margin-bottom: 1.5rem;">${pet.name}</h2>
-                <div style="display: flex; justify-content: center; gap: 1rem; margin-bottom: 2rem;">
-                    <a href="/u/${user.githubUsername}" class="btn">Public Profile</a>
-                    <form action="/api/pet/retire?petId=${pet.petId}" method="POST" onsubmit="return confirm('Really retire your pet?')">
-                        <button type="submit" class="btn btn-secondary">Retire Pet</button>
-                    </form>
-                </div>
-            </div>
 
             <div class="guide-section">
-                <h3 style="margin-bottom: 1rem;">Share on GitHub Profile 🚀</h3>
+                <h2 style="margin-bottom: 1.5rem; font-size: 1.25rem;">Recent Activity</h2>
+                ${activities.length > 0 ? `
+                    <div style="display: flex; flex-direction: column; gap: 0.75rem; margin-bottom: 2rem;">
+                        ${activities.map((a: any) => `
+                            <div style="display: flex; align-items: center; justify-content: space-between; padding: 0.75rem; background: rgba(15, 23, 42, 0.5); border-radius: 0.75rem; border: 1px solid var(--border);">
+                                <div style="display: flex; align-items: center; gap: 0.75rem;">
+                                    <span style="font-size: 1.2rem;">${getEventIcon(a.event_type)}</span>
+                                    <div>
+                                        <div style="font-weight: 600; font-size: 0.9rem; color: var(--text);">${a.event_type.replace('_', ' ').toUpperCase()}</div>
+                                        <div style="font-size: 0.75rem; color: var(--text-muted);">${a.repo_name || 'GitHub Activity'}</div>
+                                    </div>
+                                </div>
+                                <div style="text-align: right;">
+                                    <div style="font-weight: 700; color: var(--primary); font-size: 0.85rem;">+${a.xp_delta} XP</div>
+                                    <div style="font-size: 0.7rem; color: var(--text-muted);">${new Date(a.scored_at * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                ` : `
+                    <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 2rem;">No recent activity. Start coding to grow your pet!</p>
+                `}
+
+                <h3 style="margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem; border-top: 1px solid var(--border); padding-top: 1.5rem;">
+                    Share on GitHub Profile 🚀
+                </h3>
                 <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 0.5rem;">Copy this snippet to your GitHub profile README:</p>
                 <div class="code-snippet" id="snippet" onclick="copySnippet()">
                     [![Gitpet](https://petgotchi.dev/api/card/${user.githubUsername})](https://petgotchi.dev/u/${user.githubUsername})
                 </div>
-                <p id="copy-msg" style="color: var(--primary); font-size: 0.8rem; height: 1rem; opacity: 0; transition: opacity 0.2s;">Copied to clipboard!</p>
+                <p id="copy-msg" style="color: var(--primary); font-size: 0.8rem; height: 1rem; opacity: 0; transition: opacity 0.2s; margin-bottom: 1rem;">Copied to clipboard!</p>
 
-                <div style="margin-top: 2rem;">
-                    <h4 style="margin-bottom: 1rem; font-size: 1rem; color: var(--text);">How to add to your profile:</h4>
-                    <div class="guide-step">
-                        <div class="step-number">1</div>
-                        <p style="font-size: 0.9rem;">Go to your <a href="https://github.com/${user.githubUsername}" target="_blank" style="color: var(--primary);">GitHub Profile</a>.</p>
+                <details style="margin-top: 1rem;">
+                    <summary style="cursor: pointer; color: var(--primary); font-size: 0.9rem; font-weight: 600; outline: none;">
+                        How to add to your profile?
+                    </summary>
+                    <div style="margin-top: 1.5rem; padding-left: 0.5rem; border-left: 2px solid var(--border);">
+                        <div class="guide-step">
+                            <div class="step-number">1</div>
+                            <p style="font-size: 0.9rem;">Go to your <a href="https://github.com/${user.githubUsername}" target="_blank" style="color: var(--primary);">GitHub Profile</a>.</p>
+                        </div>
+                        <div class="guide-step">
+                            <div class="step-number">2</div>
+                            <p style="font-size: 0.9rem;">Edit/Create the repo named <strong>${user.githubUsername}</strong>.</p>
+                        </div>
+                        <div class="guide-step">
+                            <div class="step-number">3</div>
+                            <p style="font-size: 0.9rem;">Paste the snippet into <code>README.md</code> and save!</p>
+                        </div>
                     </div>
-                    <div class="guide-step">
-                        <div class="step-number">2</div>
-                        <p style="font-size: 0.9rem;">Edit/Create the repo named <strong>${user.githubUsername}</strong>.</p>
-                    </div>
-                    <div class="guide-step">
-                        <div class="step-number">3</div>
-                        <p style="font-size: 0.9rem;">Paste the snippet into <code>README.md</code> and save!</p>
-                    </div>
-                </div>
+                </details>
+            </div>
+
+            <!-- Retire button positioned in bottom corner -->
+            <div style="position: absolute; bottom: 1.5rem; right: 2rem;">
+                <form action="/api/pet/retire?petId=${pet.petId}" method="POST" onsubmit="return confirm('Really retire your pet?')">
+                    <button type="submit" style="background: transparent; border: none; color: #f44336; font-size: 0.8rem; cursor: pointer; opacity: 0.6; text-decoration: underline;">Retire Pet</button>
+                </form>
             </div>
         </div>
 
@@ -303,6 +341,96 @@ app.get('/u/:username', async (c) => {
             `}
         </div>
     `, authUser ? { username: authUser.githubUsername } : undefined));
+});
+
+app.get('/guide', async (c) => {
+    const db = new Database(c.env.DB);
+    const user = await getAuthUser(c, db);
+
+    return c.html(renderLayout('Pet Raising Guide', `
+        <h1>How to Raise your Pet 👾</h1>
+        <p style="color: var(--text-muted); margin-bottom: 2rem;">Gitpet is powered by your real-world GitHub activity. Here is everything you need to know to keep your companion thriving.</p>
+
+        <div class="glass-card" style="margin-bottom: 2rem;">
+            <h2>📊 Understanding Stats</h2>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-top: 1rem;">
+                <div>
+                    <h3 style="color: var(--primary);">Hunger</h3>
+                    <p style="font-size: 0.9rem;">Decreases by 0.4 pts/hour. Feed it by pushing commits.</p>
+                </div>
+                <div>
+                    <h3 style="color: var(--primary);">Happiness</h3>
+                    <p style="font-size: 0.9rem;">Keep it high by opening PRs and giving code reviews.</p>
+                </div>
+                <div>
+                    <h3 style="color: var(--primary);">Health</h3>
+                    <p style="font-size: 0.9rem;">Maintained by green builds (passing CI) and consistent streaks.</p>
+                </div>
+                <div>
+                    <h3 style="color: var(--primary);">XP</h3>
+                    <p style="font-size: 0.9rem;">Accumulates over time to level up and evolve your pet.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="glass-card" style="margin-bottom: 2rem;">
+            <h2>⚔️ Interaction Map</h2>
+            <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1.5rem;">Perform these actions on GitHub to boost your pet's stats:</p>
+            <table style="width: 100%; border-collapse: collapse; font-size: 0.9rem;">
+                <thead>
+                    <tr style="border-bottom: 1px solid var(--border); text-align: left;">
+                        <th style="padding: 0.5rem;">Action</th>
+                        <th style="padding: 0.5rem;">Bonus</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr style="border-bottom: 1px solid var(--border);">
+                        <td style="padding: 0.8rem 0.5rem;">Push (Commit)</td>
+                        <td style="padding: 0.8rem 0.5rem; color: #ff9800;">+15 Hunger, +10 XP</td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid var(--border);">
+                        <td style="padding: 0.8rem 0.5rem;">PR Opened</td>
+                        <td style="padding: 0.8rem 0.5rem; color: #2196f3;">+15 Happiness, +10 XP</td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid var(--border);">
+                        <td style="padding: 0.8rem 0.5rem;">PR Merged</td>
+                        <td style="padding: 0.8rem 0.5rem; color: #4caf50;">+30 Happiness, +25 XP</td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid var(--border);">
+                        <td style="padding: 0.8rem 0.5rem;">Code Review</td>
+                        <td style="padding: 0.8rem 0.5rem; color: #38bdf8;">+20 Happiness, +15 XP</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="glass-card" style="margin-bottom: 2rem;">
+            <h2>🧬 Lifecycle & Evolution</h2>
+            <div style="margin-top: 1rem;">
+                <div class="guide-step">
+                    <div class="step-number">0</div>
+                    <div>
+                        <strong>Egg</strong>
+                        <p style="font-size: 0.8rem; color: var(--text-muted);">The beginning of your journey. Hatches on your first commit.</p>
+                    </div>
+                </div>
+                <div class="guide-step">
+                    <div class="step-number">1</div>
+                    <div>
+                        <strong>Youngling</strong>
+                        <p style="font-size: 0.8rem; color: var(--text-muted);">Reached at 200 XP. This is where your coding personality begins to surface.</p>
+                    </div>
+                </div>
+                <div class="guide-step">
+                    <div class="step-number">2</div>
+                    <div>
+                        <strong>Fledgling</strong>
+                        <p style="font-size: 0.8rem; color: var(--text-muted);">Reached at 600 XP and 30 days. Traits (Lone Coder, Architect, etc.) are locked here.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `, user ? { username: user.githubUsername } : undefined));
 });
 
 app.post('/api/pet/retire', async (c) => {

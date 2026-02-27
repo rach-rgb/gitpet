@@ -196,6 +196,14 @@ export class Database {
         return result.results || [];
     }
 
+    async fetchRecentActivity(userId: string, limit: number = 5): Promise<any[]> {
+        const result = await this.db
+            .prepare('SELECT * FROM activity_log WHERE user_id = ? ORDER BY scored_at DESC LIMIT ?')
+            .bind(userId, limit)
+            .all();
+        return result.results || [];
+    }
+
     async createNotification(userId: string, type: string, payload: any): Promise<void> {
         const notificationId = crypto.randomUUID();
         await this.db.prepare('INSERT INTO notifications (notification_id, user_id, type, payload, created_at) VALUES (?, ?, ?, ?, ?)')
