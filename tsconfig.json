@@ -10,7 +10,9 @@
     ],
     "types": [
       "@cloudflare/workers-types"
-    ]
+    ],
+    "resolveJsonModule": true,
+    "esModuleInterop": true
   },
   "include": [
     "src/**/*"

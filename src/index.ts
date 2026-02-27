@@ -6,6 +6,7 @@ import { setCookie, getCookie, deleteCookie } from 'hono/cookie';
 import { syncAndDecay } from './pet/sync';
 import { renderPetCard, renderPlaceholderCard } from './card/renderer';
 import { renderLayout } from './shared/style';
+import { debugApp } from './auth/debug';
 
 type Bindings = {
     DB: D1Database;
@@ -42,6 +43,9 @@ app.get('/', async (c) => {
                 <a href="/dashboard" class="btn">Go to Dashboard</a>
             ` : `
                 <a href="/auth/login" class="btn">Connect with GitHub</a>
+                <div style="margin-top: 1rem;">
+                    <a href="/auth/debug" style="color: var(--text-muted); font-size: 0.8rem; text-decoration: none;">[Dev] Debug Login</a>
+                </div>
             `}
         </div>
         <div style="margin-top: 3rem; display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
@@ -72,6 +76,8 @@ app.get('/auth/logout', (c) => {
     deleteCookie(c, 'session', { path: '/' });
     return c.redirect('/');
 });
+
+app.route('/auth', debugApp);
 
 app.get('/auth/callback', async (c) => {
     const code = c.req.query('code');
@@ -160,21 +166,57 @@ app.get('/dashboard', async (c) => {
     if (!pet) return c.redirect('/onboarding');
 
     return c.html(renderLayout('Dashboard', `
-        <h1>Your Gitpet</h1>
+        <h1 style="text-align: center; margin-bottom: 2rem;">My Gitpet</h1>
         <div class="glass-card" style="margin-bottom: 2rem;">
             <div style="display: flex; justify-content: center; margin-bottom: 1.5rem;">
                 <img src="/api/card/${user.githubUsername}" alt="Pet Card" style="border-radius: 1rem; width: 100%; max-width: 420px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2);"/>
             </div>
             <div style="text-align: center;">
-                <h2>${pet.name}</h2>
-                <div style="display: flex; justify-content: center; gap: 1rem;">
-                    <a href="/u/${user.githubUsername}" class="btn">View Public Profile</a>
+                <h2 style="color: var(--text); font-weight: 800; margin-bottom: 1.5rem;">${pet.name}</h2>
+                <div style="display: flex; justify-content: center; gap: 1rem; margin-bottom: 2rem;">
+                    <a href="/u/${user.githubUsername}" class="btn">Public Profile</a>
                     <form action="/api/pet/retire?petId=${pet.petId}" method="POST" onsubmit="return confirm('Really retire your pet?')">
                         <button type="submit" class="btn btn-secondary">Retire Pet</button>
                     </form>
                 </div>
             </div>
+
+            <div class="guide-section">
+                <h3 style="margin-bottom: 1rem;">Share on GitHub Profile 🚀</h3>
+                <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 0.5rem;">Copy this snippet to your GitHub profile README:</p>
+                <div class="code-snippet" id="snippet" onclick="copySnippet()">
+                    [![Gitpet](https://petgotchi.dev/api/card/${user.githubUsername})](https://petgotchi.dev/u/${user.githubUsername})
+                </div>
+                <p id="copy-msg" style="color: var(--primary); font-size: 0.8rem; height: 1rem; opacity: 0; transition: opacity 0.2s;">Copied to clipboard!</p>
+
+                <div style="margin-top: 2rem;">
+                    <h4 style="margin-bottom: 1rem; font-size: 1rem; color: var(--text);">How to add to your profile:</h4>
+                    <div class="guide-step">
+                        <div class="step-number">1</div>
+                        <p style="font-size: 0.9rem;">Go to your <a href="https://github.com/${user.githubUsername}" target="_blank" style="color: var(--primary);">GitHub Profile</a>.</p>
+                    </div>
+                    <div class="guide-step">
+                        <div class="step-number">2</div>
+                        <p style="font-size: 0.9rem;">Edit/Create the repo named <strong>${user.githubUsername}</strong>.</p>
+                    </div>
+                    <div class="guide-step">
+                        <div class="step-number">3</div>
+                        <p style="font-size: 0.9rem;">Paste the snippet into <code>README.md</code> and save!</p>
+                    </div>
+                </div>
+            </div>
         </div>
+
+        <script>
+            function copySnippet() {
+                const text = document.getElementById('snippet').innerText.trim();
+                navigator.clipboard.writeText(text).then(() => {
+                    const msg = document.getElementById('copy-msg');
+                    msg.style.opacity = '1';
+                    setTimeout(() => msg.style.opacity = '0', 2000);
+                });
+            }
+        </script>
     `, { username: user.githubUsername }));
 });
 

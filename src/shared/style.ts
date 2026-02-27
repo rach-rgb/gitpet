@@ -135,10 +135,42 @@ footer {
 }
 
 .fade-in { animation: fadeIn 0.5s ease-out; }
+
+.code-snippet {
+  background: #020617;
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  padding: 1rem;
+  font-family: monospace;
+  font-size: 0.9rem;
+  color: var(--primary);
+  word-break: break-all;
+  margin: 1rem 0;
+  cursor: pointer;
+  position: relative;
+}
+
+.code-snippet:hover { background: #0f172a; }
+
+.guide-section { margin-top: 2rem; border-top: 1px solid var(--border); padding-top: 2rem; }
+.guide-step { display: flex; gap: 1rem; margin-bottom: 1rem; align-items: flex-start; }
+.step-number { 
+  background: var(--primary); 
+  color: var(--bg); 
+  width: 24px; 
+  height: 24px; 
+  border-radius: 50%; 
+  display: flex; 
+  align-items: center; 
+  justify-content: center; 
+  font-weight: 800; 
+  flex-shrink: 0; 
+  font-size: 0.8rem;
+}
 `;
 
 export function renderLayout(title: string, content: string, user?: { username: string }): string {
-    return `
+  return `
 <!DOCTYPE html>
 <html lang="en">
 <head>

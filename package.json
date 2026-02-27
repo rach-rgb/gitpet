@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",
-    "db:migrate": "wrangler d1 execute DB --local --file=migrations/schema.sql",
+    "db:migrate": "wrangler d1 execute petgotchi-db --local --file=migrations/schema.sql",
+    "db:seed": "wrangler d1 execute petgotchi-db --local --file=migrations/seed.sql",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
