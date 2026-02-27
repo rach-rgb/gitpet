@@ -355,7 +355,7 @@ app.get('/guide', async (c) => {
             <h2>📊 Understanding Stats</h2>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-top: 1rem;">
                 <div>
-                    <h3 style="color: var(--primary);">Hunger</h3>
+                    <h3 style="color: var(--primary);">Fullness</h3>
                     <p style="font-size: 0.9rem;">Decreases by 0.4 pts/hour. Feed it by pushing commits.</p>
                 </div>
                 <div>
@@ -386,7 +386,7 @@ app.get('/guide', async (c) => {
                 <tbody>
                     <tr style="border-bottom: 1px solid var(--border);">
                         <td style="padding: 0.8rem 0.5rem;">Push (Commit)</td>
-                        <td style="padding: 0.8rem 0.5rem; color: #ff9800;">+15 Hunger, +10 XP</td>
+                        <td style="padding: 0.8rem 0.5rem; color: #ff9800;">+15 Fullness, +10 XP</td>
                     </tr>
                     <tr style="border-bottom: 1px solid var(--border);">
                         <td style="padding: 0.8rem 0.5rem;">PR Opened</td>

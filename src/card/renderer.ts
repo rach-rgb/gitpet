@@ -60,7 +60,7 @@ export function renderPetCard(pet: Pet): string {
         
         <!-- Stats Bars -->
         <g transform="translate(0, 50)">
-          <text y="0" class="stat-text">Hunger</text>
+          <text y="0" class="stat-text">Fullness</text>
           <rect y="5" width="180" height="10" rx="5" fill="#333" />
           <rect y="5" width="${hunger * 1.8}" height="10" rx="5" fill="${getStatColor(hunger)}" />
           
