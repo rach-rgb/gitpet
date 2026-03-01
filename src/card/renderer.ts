@@ -44,17 +44,24 @@ export function renderPetCard(pet: Pet): string {
           .name-text { font-family: sans-serif; font-size: 22px; font-weight: bold; fill: #fff; }
           .meta-text { font-family: sans-serif; font-size: 13px; fill: #888; }
           .footer-text { font-family: sans-serif; font-size: 10px; fill: #444; }
+          .logo-text { font-family: system-ui, -apple-system, sans-serif; font-size: 22px; font-weight: 800; fill: #fff; letter-spacing: 0.05em; }
+          .logo-text-outline { font-family: system-ui, -apple-system, sans-serif; font-size: 22px; font-weight: 800; fill: none; stroke: #6366f1; stroke-width: 1.2; letter-spacing: 0.05em; }
         </style>
       </defs>
       <rect width="420" height="200" rx="16" fill="#1a1a2e" />
+      <!-- GitPet Logo (왼쪽 상단) -->
+      <g transform="translate(20, 28)">
+        <text x="0" y="0" class="logo-text-outline" text-anchor="start">GitPet</text>
+        <text x="0" y="0" class="logo-text" text-anchor="start">GitPet</text>
+      </g>
       
       <!-- Pet Sprite (60% weight) -->
-      <g transform="translate(20, 20)">
+      <g transform="translate(20, 44)">
         ${spriteSvg}
       </g>
       
       <!-- Content Area (40% weight) -->
-      <g transform="translate(200, 30)">
+      <g transform="translate(200, 44)">
         <text x="0" y="0" class="name-text">${name}</text>
         <text x="0" y="25" class="meta-text">Lv.${level} / ${difficulty.toUpperCase()}</text>
         
