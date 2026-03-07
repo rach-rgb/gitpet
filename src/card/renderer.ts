@@ -19,7 +19,7 @@ export function renderPetCard(pet: Pet): string {
   // 1. Determine Health State
   let state: 'healthy' | 'hungry' | 'sad' | 'sick' | 'dormant' | 'neutral' = 'neutral';
   if (isDormant) state = 'dormant';
-  else if (health < 20) state = 'sick';
+  else if (health < 25) state = 'sick';
   else if (hunger < 40) state = 'hungry';
   else if (happiness < 30) state = 'sad';
   else if (hunger >= 70 && happiness >= 70 && health >= 70) state = 'healthy';

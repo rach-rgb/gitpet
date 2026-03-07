@@ -12,7 +12,6 @@ export async function syncAndDecay(env: { DB: D1Database; TOKEN_ENCRYPTION_KEY: 
     const now = Math.floor(Date.now() / 1000);
 
     // 1. Fetch users who haven't been synced in 30 minutes
-    // For MVP, we'll fetch a batch. In production, this would be more optimized.
     const users = await env.DB.prepare('SELECT * FROM users WHERE last_sync < ? LIMIT 50')
         .bind(now - 1800)
         .all();
@@ -30,48 +29,109 @@ export async function syncAndDecay(env: { DB: D1Database; TOKEN_ENCRYPTION_KEY: 
             // 3. Process events and calculate deltas
             let hungerBonus = 0;
             let happinessBonus = 0;
+            let healthBonus = 0;
             let xpGain = 0;
+
             let soloScore = 0;
             let socialScore = 0;
+            let qualityScore = 0;
+            let diversityScore = 0;
+
             const xpMult = pet.difficulty === 'easy' ? 1.2 : (pet.difficulty === 'hard' ? 0.8 : 1.0);
+            const repoNames = new Set<string>();
 
             for (const event of events) {
                 if (await db.isEventProcessed(event.id, user.user_id)) continue;
 
                 if (event.type === 'PushEvent') {
-                    hungerBonus += 15;
-                    happinessBonus += 5;
-                    xpGain += 10 * xpMult;
-                    soloScore += 1.0;
+                    const commits = event.payload.commits || [];
+                    let hasTests = false;
+                    let hasDescriptiveMsg = false;
+
+                    for (const commit of commits) {
+                        const msg = commit.message.toLowerCase();
+                        if (msg.includes('test') || msg.includes('spec') || msg.includes('fix')) {
+                            hasTests = true;
+                        }
+                        if (commit.message.length > 20) {
+                            hasDescriptiveMsg = true;
+                        }
+                    }
+
+                    if (hasTests) {
+                        hungerBonus += 15;
+                        happinessBonus += 5;
+                        healthBonus += 15;
+                        xpGain += 15 * xpMult;
+                        qualityScore += 2.0;
+                    } else {
+                        hungerBonus += 15;
+                        happinessBonus += 5;
+                        xpGain += 10 * xpMult;
+                        soloScore += 1.0;
+                    }
+
+                    if (hasDescriptiveMsg) {
+                        hungerBonus += 5;
+                        xpGain += 5 * xpMult;
+                        qualityScore += 0.5;
+                    }
+
+                    if (event.repo?.name) repoNames.add(event.repo.name);
                 } else if (event.type === 'PullRequestEvent') {
-                    hungerBonus += 20;
+                    const action = event.payload.action;
+                    const merged = event.payload.pull_request?.merged;
+
+                    if (action === 'opened') {
+                        hungerBonus += 10;
+                        happinessBonus += 15;
+                        xpGain += 15 * xpMult;
+                        socialScore += 1.0;
+                    } else if (action === 'closed' && merged) {
+                        hungerBonus += 15;
+                        happinessBonus += 30;
+                        healthBonus += 10;
+                        xpGain += 25 * xpMult;
+                        socialScore += 2.0;
+                    }
+                } else if (event.type === 'IssueCommentEvent' || event.type === 'PullRequestReviewCommentEvent') {
+                    hungerBonus += 5;
                     happinessBonus += 20;
-                    xpGain += 25 * xpMult;
-                    socialScore += 2.0;
+                    healthBonus += 10;
+                    xpGain += 15 * xpMult;
+                    socialScore += 1.5;
+                } else if (event.type === 'IssuesEvent' && event.payload.action === 'closed') {
+                    happinessBonus += 15;
+                    xpGain += 10 * xpMult;
+                    diversityScore += 1.5;
                 }
 
                 await db.markEventProcessed(event.id, user.user_id);
             }
 
-            // Save trait scores
-            if (soloScore > 0 || socialScore > 0) {
-                const currentTally = await db.fetchTraitTally(user.user_id) || {
-                    userId: user.user_id,
-                    soloCommitScore: 0,
-                    socialScore: 0,
-                    qualityScore: 0,
-                    diversityScore: 0,
-                    streakScore: 0,
-                    trackingUntil: now + (86400 * 7),
-                    isLocked: false,
-                };
+            // Diverse Repos Bonus
+            if (repoNames.size >= 2) {
+                hungerBonus += 8;
+                happinessBonus += 14;
+                healthBonus += 8;
+                xpGain += 20 * xpMult;
+                diversityScore += 1.0;
+            }
 
-                if (!currentTally.isLocked) {
-                    await db.upsertTraitTally(user.user_id, {
-                        soloCommitScore: currentTally.soloCommitScore + soloScore,
-                        socialScore: currentTally.socialScore + socialScore,
-                    });
-                }
+            // Save trait scores
+            const currentTally = await db.fetchTraitTally(user.user_id);
+            if (currentTally && !currentTally.isLocked) {
+                // Streak score calculation: 연속 일수 × 0.3
+                // We'll update streakScore based on pet.streakCurrent
+                const streakScore = pet.streakCurrent * 0.3;
+
+                await db.upsertTraitTally(user.user_id, {
+                    soloCommitScore: (currentTally.soloCommitScore || 0) + soloScore,
+                    socialScore: (currentTally.socialScore || 0) + socialScore,
+                    qualityScore: (currentTally.qualityScore || 0) + qualityScore,
+                    diversityScore: (currentTally.diversityScore || 0) + diversityScore,
+                    streakScore: streakScore // Updated based on current streak
+                });
             }
 
             // 4. Calculate decay
@@ -83,7 +143,7 @@ export async function syncAndDecay(env: { DB: D1Database; TOKEN_ENCRYPTION_KEY: 
             const updatedStats = {
                 hunger: Math.max(0, Math.min(100, pet.hunger + hungerBonus - decay)),
                 happiness: Math.max(0, Math.min(100, pet.happiness + happinessBonus - decay)),
-                health: Math.max(0, Math.min(100, pet.health - decay)),
+                health: Math.max(0, Math.min(100, pet.health + healthBonus - decay)),
                 xp: pet.xp + xpGain
             };
 
@@ -121,35 +181,4 @@ function getDifficultyMult(difficulty: Difficulty): number {
         case 'hard': return 2.0;
         default: return 1.0;
     }
-}
-
-function calculateActivityGains(events: any[], difficulty: Difficulty) {
-    // Simplified scoring for MVP
-    // Each push event: +15 hunger, +5 happy, +10 XP
-    // Multiplied by XP multiplier for difficulty
-    const xpMult = difficulty === 'easy' ? 1.2 : (difficulty === 'hard' ? 0.8 : 1.0);
-
-    let hungerBonus = 0;
-    let happinessBonus = 0;
-    let xpGain = 0;
-
-    for (const event of events) {
-        if (event.type === 'PushEvent') {
-            hungerBonus += 15;
-            happinessBonus += 5;
-            xpGain += 10 * xpMult;
-        }
-    }
-
-    return { hungerBonus, happinessBonus, healthBonus: 0, xpGain };
-}
-
-async function updatePetStats(db: Database, pet: Pet, deltas: any) {
-    const newHunger = Math.max(0, Math.min(100, pet.hunger + deltas.hunger));
-    const newHappiness = Math.max(0, Math.min(100, pet.happiness + deltas.happiness));
-    const newHealth = Math.max(0, Math.min(100, pet.health + deltas.health));
-    const newXp = pet.xp + deltas.xp;
-
-    // TODO: Implement actual database update call in Database class
-    // For now, this is a placeholder for the logic.
 }
