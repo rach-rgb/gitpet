@@ -43,6 +43,12 @@ export async function syncAndDecay(env: { DB: D1Database; TOKEN_ENCRYPTION_KEY: 
             for (const event of events) {
                 if (await db.isEventProcessed(event.id, user.user_id)) continue;
 
+                let eHunger = 0;
+                let eHappiness = 0;
+                let eHealth = 0;
+                let eXp = 0;
+                let soloE = 0, socialE = 0, qualityE = 0, diversityE = 0;
+
                 if (event.type === 'PushEvent') {
                     const commits = event.payload.commits || [];
                     let hasTests = false;
@@ -59,22 +65,22 @@ export async function syncAndDecay(env: { DB: D1Database; TOKEN_ENCRYPTION_KEY: 
                     }
 
                     if (hasTests) {
-                        hungerBonus += 15;
-                        happinessBonus += 5;
-                        healthBonus += 15;
-                        xpGain += 15 * xpMult;
-                        qualityScore += 2.0;
+                        eHunger = 15;
+                        eHappiness = 5;
+                        eHealth = 15;
+                        eXp = 15 * xpMult;
+                        qualityE = 2.0;
                     } else {
-                        hungerBonus += 15;
-                        happinessBonus += 5;
-                        xpGain += 10 * xpMult;
-                        soloScore += 1.0;
+                        eHunger = 15;
+                        eHappiness = 5;
+                        eXp = 10 * xpMult;
+                        soloE = 1.0;
                     }
 
                     if (hasDescriptiveMsg) {
-                        hungerBonus += 5;
-                        xpGain += 5 * xpMult;
-                        qualityScore += 0.5;
+                        eHunger += 5;
+                        eXp += 5 * xpMult;
+                        qualityE += 0.5;
                     }
 
                     if (event.repo?.name) repoNames.add(event.repo.name);
@@ -83,27 +89,56 @@ export async function syncAndDecay(env: { DB: D1Database; TOKEN_ENCRYPTION_KEY: 
                     const merged = event.payload.pull_request?.merged;
 
                     if (action === 'opened') {
-                        hungerBonus += 10;
-                        happinessBonus += 15;
-                        xpGain += 15 * xpMult;
-                        socialScore += 1.0;
+                        eHunger = 10;
+                        eHappiness = 15;
+                        eXp = 15 * xpMult;
+                        socialE = 1.0;
                     } else if (action === 'closed' && merged) {
-                        hungerBonus += 15;
-                        happinessBonus += 30;
-                        healthBonus += 10;
-                        xpGain += 25 * xpMult;
-                        socialScore += 2.0;
+                        eHunger = 15;
+                        eHappiness = 30;
+                        eHealth = 10;
+                        eXp = 25 * xpMult;
+                        socialE = 2.0;
                     }
                 } else if (event.type === 'IssueCommentEvent' || event.type === 'PullRequestReviewCommentEvent') {
-                    hungerBonus += 5;
-                    happinessBonus += 20;
-                    healthBonus += 10;
-                    xpGain += 15 * xpMult;
-                    socialScore += 1.5;
+                    eHunger = 5;
+                    eHappiness = 20;
+                    eHealth = 10;
+                    eXp = 15 * xpMult;
+                    socialE = 1.5;
                 } else if (event.type === 'IssuesEvent' && event.payload.action === 'closed') {
-                    happinessBonus += 15;
-                    xpGain += 10 * xpMult;
-                    diversityScore += 1.5;
+                    eHappiness = 15;
+                    eXp = 10 * xpMult;
+                    diversityE = 1.5;
+                }
+
+                if (eHunger > 0 || eHappiness > 0 || eHealth > 0 || eXp > 0) {
+                    await db.logActivity({
+                        userId: user.user_id,
+                        petId: pet.petId,
+                        eventType: event.type,
+                        githubEventId: event.id,
+                        repoName: event.repo?.name || null,
+                        hungerDelta: eHunger,
+                        happinessDelta: eHappiness,
+                        healthDelta: eHealth,
+                        xpDelta: Math.floor(eXp),
+                        multiplier: xpMult,
+                        scoredAt: now,
+                        logId: crypto.randomUUID(),
+                        commitCount: null,
+                        linesChanged: null,
+                        notes: null
+                    });
+
+                    hungerBonus += eHunger;
+                    happinessBonus += eHappiness;
+                    healthBonus += eHealth;
+                    xpGain += eXp;
+                    soloScore += soloE;
+                    socialScore += socialE;
+                    qualityScore += qualityE;
+                    diversityScore += diversityE;
                 }
 
                 await db.markEventProcessed(event.id, user.user_id);

@@ -211,6 +211,29 @@ export class Database {
             .run();
     }
 
+    async logActivity(activity: ActivityLog): Promise<void> {
+        await this.db.prepare(`
+            INSERT INTO activity_log (
+                log_id, user_id, pet_id, event_type, github_event_id, repo_name,
+                hunger_delta, happiness_delta, health_delta, xp_delta,
+                multiplier, scored_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `).bind(
+            activity.logId || crypto.randomUUID(),
+            activity.userId,
+            activity.petId,
+            activity.eventType,
+            activity.githubEventId,
+            activity.repoName,
+            activity.hungerDelta,
+            activity.happinessDelta,
+            activity.healthDelta,
+            activity.xpDelta,
+            activity.multiplier,
+            activity.scoredAt
+        ).run();
+    }
+
     // --- Security & Session Management ---
 
     async createSession(userId: string, sessionId: string, expiresAt: number): Promise<void> {

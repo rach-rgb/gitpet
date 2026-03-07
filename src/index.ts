@@ -230,13 +230,12 @@ app.get('/dashboard', async (c) => {
     const activities = await db.fetchRecentActivity(user.userId, 5);
 
     const getEventIcon = (type: string) => {
-        switch (type.toLowerCase()) {
-            case 'push': return '📦';
-            case 'pull_request': return '🔀';
-            case 'pull_request_review': return '👁️';
-            case 'issue': return '🎫';
-            default: return '⚡';
-        }
+        const t = type.toLowerCase();
+        if (t.includes('push')) return '📦';
+        if (t.includes('pullrequestreview')) return '👁️';
+        if (t.includes('pullrequest')) return '🔀';
+        if (t.includes('issue')) return '🎫';
+        return '⚡';
     };
 
     return c.html(renderLayout('Dashboard', `
@@ -362,6 +361,16 @@ app.get('/u/:username', async (c) => {
 
     const pet = await db.fetchPet(user.user_id);
     const hof = await db.fetchHallOfFame(user.user_id);
+    const activities = await db.fetchRecentActivity(user.user_id, 5);
+
+    const getEventIcon = (type: string) => {
+        const t = type.toLowerCase();
+        if (t.includes('push')) return '📦';
+        if (t.includes('pullrequestreview')) return '👁️';
+        if (t.includes('pullrequest')) return '🔀';
+        if (t.includes('issue')) return '🎫';
+        return '⚡';
+    };
 
     return c.html(renderLayout(`${username}'s Pets`, `
         <div style="text-align: center; margin-bottom: 3rem;">
@@ -380,6 +389,31 @@ app.get('/u/:username', async (c) => {
                 <p style="color: var(--text-muted);">No active pet found.</p>
             </div>
         `}
+
+        <div class="glass-card" style="margin-bottom: 2rem;">
+            <h2>Recent Activity</h2>
+            ${activities.length > 0 ? `
+                <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                    ${activities.map((a: any) => `
+                        <div style="display: flex; align-items: center; justify-content: space-between; padding: 0.75rem; background: rgba(15, 23, 42, 0.5); border-radius: 0.75rem; border: 1px solid var(--border);">
+                            <div style="display: flex; align-items: center; gap: 0.75rem;">
+                                <span style="font-size: 1.2rem;">${getEventIcon(a.event_type)}</span>
+                                <div>
+                                    <div style="font-weight: 600; font-size: 0.9rem; color: var(--text);">${a.event_type.replace('Event', '').replace(/([A-Z])/g, ' $1').trim().toUpperCase()}</div>
+                                    <div style="font-size: 0.75rem; color: var(--text-muted);">${a.repo_name || 'GitHub Activity'}</div>
+                                </div>
+                            </div>
+                            <div style="text-align: right;">
+                                <div style="font-weight: 700; color: var(--primary); font-size: 0.85rem;">+${a.xp_delta} XP</div>
+                                <div style="font-size: 0.7rem; color: var(--text-muted);">${new Date(a.scored_at * 1000).toLocaleDateString()}</div>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            ` : `
+                <p style="color: var(--text-muted); font-size: 0.9rem;">No recent activity recorded yet.</p>
+            `}
+        </div>
         
         <div class="glass-card" style="margin-top: 2rem;">
             <h2>Hall of Fame</h2>
