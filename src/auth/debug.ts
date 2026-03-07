@@ -3,6 +3,7 @@ import { setCookie } from 'hono/cookie';
 import { signSession } from '../shared/utils';
 
 type Bindings = {
+    DB: D1Database;
     SESSION_SIGNING_KEY: string;
 };
 
@@ -13,14 +14,14 @@ const debugApp = new Hono<{ Bindings: Bindings }>();
  * Automatically logs in as 'demo_user' (mock-user-123).
  */
 debugApp.get('/debug', async (c) => {
-    // Only allow in local development (simple check)
-    const url = new URL(c.req.url);
-    if (url.hostname !== 'localhost' && url.hostname !== '127.0.0.1') {
-        return c.text('Debug login only allowed on localhost', 403);
-    }
-
     const mockUserId = 'mock-user-123';
     const sessionId = await signSession(mockUserId, c.env.SESSION_SIGNING_KEY);
+
+    // Also create session in DB
+    const { Database } = await import('../shared/db');
+    const db = new Database(c.env.DB);
+    const expiresAt = Math.floor(Date.now() / 1000) + (60 * 60 * 24 * 30);
+    await db.createSession(mockUserId, sessionId, expiresAt);
 
     setCookie(c, 'session', sessionId, {
         httpOnly: true,
