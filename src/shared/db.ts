@@ -210,4 +210,40 @@ export class Database {
             .bind(notificationId, userId, type, JSON.stringify(payload), Math.floor(Date.now() / 1000))
             .run();
     }
+
+    // --- Security & Session Management ---
+
+    async createSession(userId: string, sessionId: string, expiresAt: number): Promise<void> {
+        const now = Math.floor(Date.now() / 1000);
+        await this.db.prepare('INSERT INTO sessions (session_id, user_id, created_at, expires_at) VALUES (?, ?, ?, ?)')
+            .bind(sessionId, userId, now, expiresAt)
+            .run();
+    }
+
+    async deleteSession(sessionId: string): Promise<void> {
+        await this.db.prepare('DELETE FROM sessions WHERE session_id = ?').bind(sessionId).run();
+    }
+
+    async verifySessionInDb(sessionId: string): Promise<boolean> {
+        const now = Math.floor(Date.now() / 1000);
+        const result = await this.db.prepare('SELECT 1 FROM sessions WHERE session_id = ? AND expires_at > ?')
+            .bind(sessionId, now)
+            .first();
+        return !!result;
+    }
+
+    async cleanupOAuthStates(): Promise<void> {
+        const tenMinutesAgo = Math.floor(Date.now() / 1000) - 600;
+        await this.db.prepare('DELETE FROM oauth_states WHERE created_at < ?').bind(tenMinutesAgo).run();
+    }
+
+    async cleanupExpiredSessions(): Promise<void> {
+        const now = Math.floor(Date.now() / 1000);
+        await this.db.prepare('DELETE FROM sessions WHERE expires_at < ?').bind(now).run();
+    }
+
+    async deleteUser(userId: string): Promise<void> {
+        // Cascade deletes should handle other tables (pets, sessions, etc.)
+        await this.db.prepare('DELETE FROM users WHERE user_id = ?').bind(userId).run();
+    }
 }

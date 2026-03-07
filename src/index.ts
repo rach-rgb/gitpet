@@ -14,9 +14,35 @@ type Bindings = {
     GITHUB_CLIENT_SECRET: string;
     TOKEN_ENCRYPTION_KEY: string;
     SESSION_SIGNING_KEY: string;
+    ENABLE_DEBUG_LOGIN: string;
 };
 
 const app = new Hono<{ Bindings: Bindings }>();
+
+// Simple in-memory rate limiting for sensitive routes
+const loginRateLimit = new Map<string, { count: number; lastReset: number }>();
+const RATE_LIMIT_WINDOW = 60 * 1000; // 1 minute
+const MAX_REQUESTS = 5;
+
+app.use('/auth/login', async (c, next) => {
+    const ip = c.req.header('CF-Connecting-IP') || 'unknown';
+    const now = Date.now();
+    const entry = loginRateLimit.get(ip) || { count: 0, lastReset: now };
+
+    if (now - entry.lastReset > RATE_LIMIT_WINDOW) {
+        entry.count = 1;
+        entry.lastReset = now;
+    } else {
+        entry.count++;
+    }
+
+    loginRateLimit.set(ip, entry);
+
+    if (entry.count > MAX_REQUESTS) {
+        return c.text('Too many login attempts. Please try again in a minute.', 429);
+    }
+    await next();
+});
 
 /**
  * Helper to get the authenticated user for layout rendering.
@@ -24,8 +50,14 @@ const app = new Hono<{ Bindings: Bindings }>();
 async function getAuthUser(c: any, db: Database) {
     const sessionCookie = getCookie(c, 'session');
     if (!sessionCookie) return null;
+
     const userId = await verifySession(sessionCookie, c.env.SESSION_SIGNING_KEY);
     if (!userId) return null;
+
+    // Verify session existence in DB
+    const isSessionValid = await db.verifySessionInDb(sessionCookie);
+    if (!isSessionValid) return null;
+
     return await db.fetchUserByUserId(userId);
 }
 
@@ -72,11 +104,23 @@ app.get('/auth/login', async (c) => {
     return c.redirect(url);
 });
 
-app.get('/auth/logout', (c) => {
+app.get('/auth/logout', async (c) => {
+    const sessionCookie = getCookie(c, 'session');
+    if (sessionCookie) {
+        const db = new Database(c.env.DB);
+        await db.deleteSession(sessionCookie);
+    }
     deleteCookie(c, 'session', { path: '/' });
     return c.redirect('/');
 });
 
+// Register debug routes only in non-production environments if explicitly enabled
+app.use('/auth/debug', async (c, next) => {
+    if (c.env.ENABLE_DEBUG_LOGIN !== 'true') {
+        return c.text('Debug login is disabled', 403);
+    }
+    await next();
+});
 app.route('/auth', debugApp);
 
 app.get('/auth/callback', async (c) => {
@@ -102,6 +146,9 @@ app.get('/auth/callback', async (c) => {
         });
 
         const sessionId = await signSession(user.userId, c.env.SESSION_SIGNING_KEY);
+        const expiresAt = Math.floor(Date.now() / 1000) + (60 * 60 * 24 * 30);
+        await db.createSession(user.userId, sessionId, expiresAt);
+
         setCookie(c, 'session', sessionId, {
             httpOnly: true,
             secure: true,
@@ -135,6 +182,21 @@ app.get('/api/card/:username', async (c) => {
         'Content-Type': 'image/svg+xml',
         'Cache-Control': 'public, max-age=300',
     });
+});
+
+app.post('/api/user/delete', async (c) => {
+    const db = new Database(c.env.DB);
+    const user = await getAuthUser(c, db);
+    if (!user) return c.redirect('/auth/login');
+
+    const { confirm } = await c.req.parseBody();
+    if (confirm !== 'DELETE') {
+        return c.json({ error: 'Please type DELETE to confirm' }, 400);
+    }
+
+    await db.deleteUser(user.userId);
+    deleteCookie(c, 'session', { path: '/' });
+    return c.redirect('/');
 });
 
 app.post('/api/pet', async (c) => {
@@ -450,6 +512,11 @@ app.post('/api/pet/retire', async (c) => {
 export default {
     fetch: app.fetch,
     async scheduled(event: any, env: Bindings, ctx: any) {
-        ctx.waitUntil(syncAndDecay(env));
+        const db = new Database(env.DB);
+        ctx.waitUntil(Promise.all([
+            syncAndDecay(env),
+            db.cleanupOAuthStates(),
+            db.cleanupExpiredSessions()
+        ]));
     },
 };

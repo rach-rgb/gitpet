@@ -159,6 +159,10 @@ export async function syncAndDecay(env: { DB: D1Database; TOKEN_ENCRYPTION_KEY: 
 
         } catch (error) {
             console.error(`Sync failed for user ${user.github_username}:`, error);
+            if ((error as Error).message.includes('AUTH_ERROR')) {
+                // Potential placeholder for token invalidation logic
+                console.warn(`User ${user.github_username} has invalid/revoked token.`);
+            }
         }
     }
 }
@@ -171,6 +175,11 @@ async function fetchEvents(username: string, token: string): Promise<any[]> {
             'Accept': 'application/json',
         }
     });
+
+    if (response.status === 401 || response.status === 403) {
+        throw new Error(`GitHub AUTH_ERROR: ${response.status}`);
+    }
+
     if (!response.ok) return [];
     return await response.json() as any[];
 }
