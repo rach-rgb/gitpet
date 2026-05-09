@@ -40,7 +40,11 @@ export class SpriteRenderer {
                 const colorKey = sprite.palette[colorIdx.toString()];
                 if (!colorKey) continue;
 
-                const color = palette[colorKey] || '#ff00ff';
+                // Priority: 
+                // 1. Dynamic palette (e.g. 'primary' -> '#hex')
+                // 2. Literal hex code in colorKey (e.g. '#ff0000')
+                // 3. Fallback color
+                const color = palette[colorKey] || (colorKey.startsWith('#') ? colorKey : '#ff00ff');
                 const rect = `<rect x="${c * scale}" y="${r * scale}" width="${scale}" height="${scale}" fill="${color}" shape-rendering="crispEdges" />`;
 
                 // Check if this pixel belongs to a group
@@ -83,13 +87,13 @@ export class SpriteRenderer {
 
         switch (state) {
             case 'sick':
-                return { ...base, primary: '#8b9a47', secondary: '#6e7a35' }; // Sickly green
+                return { ...base, primary: '#8b9a47', secondary: '#6e7a35', base: '#8b9a47', shadow: '#6e7a35', highlight: '#a2b158' }; // Sickly green
             case 'sad':
-                return { ...base, primary: '#708090', secondary: '#4682b4' }; // Muted blue-grey
+                return { ...base, primary: '#708090', secondary: '#4682b4', base: '#708090', shadow: '#4682b4', highlight: '#8da1b3' }; // Muted blue-grey
             case 'hungry':
-                return { ...base, primary: '#d2691e', secondary: '#8b4513' }; // Brownish/Desaturated orange
+                return { ...base, primary: '#d2691e', secondary: '#8b4513', base: '#d2691e', shadow: '#8b4513', highlight: '#df7c38' }; // Brownish/Desaturated orange
             case 'dormant':
-                return { ...base, primary: '#555555', secondary: '#333333', highlight: '#777777' }; // Greyscale
+                return { ...base, outline: '#1a1a1a', primary: '#555555', secondary: '#333333', base: '#555555', shadow: '#333333', highlight: '#777777', accent1: '#444444', accent2: '#666666' }; // Greyscale
             default:
                 return base;
         }

@@ -266,7 +266,10 @@ export class Database {
     }
 
     async deleteUser(userId: string): Promise<void> {
-        // Cascade deletes should handle other tables (pets, sessions, etc.)
+        // Explicitly delete from processed_events since it lacks ON DELETE CASCADE in schema
+        await this.db.prepare('DELETE FROM processed_events WHERE user_id = ?').bind(userId).run();
+        
+        // Cascade deletes should handle other tables (pets, sessions, activity_log, etc.)
         await this.db.prepare('DELETE FROM users WHERE user_id = ?').bind(userId).run();
     }
 }

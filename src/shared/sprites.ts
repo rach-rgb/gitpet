@@ -4,17 +4,23 @@
  */
 
 export interface ColorPalette {
-    primary: string;
-    secondary: string;
+    [key: string]: string | undefined;
     outline: string;
-    highlight: string;
-    accent?: string;
+    primary?: string; // Legacy
+    secondary?: string; // Legacy
+    base?: string;
+    shadow?: string;
+    highlight?: string;
+    accent1?: string;
+    accent2?: string;
+    eye?: string;
+    eyeHighlight?: string;
 }
 
 export interface SpritePixel {
     x: number;
     y: number;
-    colorKey: keyof ColorPalette; // Reference to palette key
+    colorKey: keyof ColorPalette | string; // Reference to palette key
 }
 
 export interface SpriteData {
@@ -25,15 +31,81 @@ export interface SpriteData {
 
 export const BASE_PALETTES: Record<string, ColorPalette> = {
     lone_coder: {
+        outline: '#1e242c',
         primary: '#4ecca3',
         secondary: '#45b291',
-        outline: '#232931',
-        highlight: '#ffffff',
+        base: '#4ecca3',
+        shadow: '#399e82',
+        highlight: '#74e0bf',
+        accent1: '#f1c40f', // Yellow highlights
+        accent2: '#e67e22',
+        eye: '#ffffff',
+        eyeHighlight: '#ffffff'
+    },
+    collaborator: {
+        outline: '#1a2530',
+        primary: '#3498db',
+        secondary: '#2980b9',
+        base: '#3498db',
+        shadow: '#2980b9',
+        highlight: '#5dade2',
+        accent1: '#2ecc71', // Green highlights
+        accent2: '#f1c40f',
+        eye: '#ffffff',
+        eyeHighlight: '#ffffff'
+    },
+    craftsman: {
+        outline: '#2c1e16',
+        primary: '#e67e22',
+        secondary: '#d35400',
+        base: '#e67e22',
+        shadow: '#d35400',
+        highlight: '#f39c12',
+        accent1: '#34495e',
+        accent2: '#bdc3c7',
+        eye: '#ffffff',
+        eyeHighlight: '#ffffff'
+    },
+    architect: {
+        outline: '#212f3d',
+        primary: '#9b59b6',
+        secondary: '#8e44ad',
+        base: '#9b59b6',
+        shadow: '#8e44ad',
+        highlight: '#af7ac5',
+        accent1: '#f1c40f',
+        accent2: '#ecf0f1',
+        eye: '#ffffff',
+        eyeHighlight: '#ffffff'
+    },
+    sprinter: {
+        outline: '#4a2311',
+        primary: '#f1c40f',
+        secondary: '#f39c12',
+        base: '#f1c40f',
+        shadow: '#f39c12',
+        highlight: '#f4d03f',
+        accent1: '#e74c3c',
+        accent2: '#ffffff',
+        eye: '#ffffff',
+        eyeHighlight: '#ffffff'
     },
     egg: {
+        outline: '#333333',
         primary: '#f3f3f3',
         secondary: '#e0e0e0',
-        outline: '#333333',
+        base: '#f3f3f3',
+        shadow: '#e0e0e0',
         highlight: '#ffffff',
+    },
+    owl: {
+        outline: '#110f1d',
+        primary: '#1d2f5d',
+        secondary: '#325388',
+        base: '#1d2f5d',
+        shadow: '#070d23',
+        highlight: '#f8be41',
+        eye: '#ffffff',
+        eyeHighlight: '#ffffff'
     }
 };

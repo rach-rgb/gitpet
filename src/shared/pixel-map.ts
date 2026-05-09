@@ -4,11 +4,17 @@
  */
 
 export interface ColorPalette {
-    primary: string;
-    secondary: string;
+    [key: string]: string | undefined;
     outline: string;
-    highlight: string;
-    accent?: string;
+    primary?: string; // Legacy
+    secondary?: string; // Legacy
+    base?: string;
+    shadow?: string;
+    highlight?: string;
+    accent1?: string;
+    accent2?: string;
+    eye?: string;
+    eyeHighlight?: string;
 }
 
 export interface SpriteGroup {

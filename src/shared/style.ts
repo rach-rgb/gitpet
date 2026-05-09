@@ -188,7 +188,6 @@ export function renderLayout(title: string, content: string, user?: { username: 
         <nav>
             ${user ? `
                 <a href="/dashboard">Dashboard</a>
-                <a href="/u/${user.username}">Profile</a>
             ` : ''}
             <a href="/guide">Guide</a>
             ${user ? `

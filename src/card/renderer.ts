@@ -5,6 +5,7 @@ import { PixelMap } from '../shared/pixel-map';
 // Sprite Imports
 import eggSprite from '../sprites/shared/egg.json';
 import hatchlingSprite from '../sprites/shared/hatchling.json';
+import { traitSprites } from '../sprites';
 
 /**
  * Basic SVG renderer for the Pet card.
@@ -28,8 +29,13 @@ export function renderPetCard(pet: Pet): string {
 
   // 2. Select Sprite
   let sprite: PixelMap = (eggSprite as unknown) as PixelMap;
-  if (stage === 1) sprite = (hatchlingSprite as unknown) as PixelMap;
-  // TODO: Add Stage 2+ trait-specific sprites
+  if (stage === 1) {
+      sprite = (hatchlingSprite as unknown) as PixelMap;
+  } else if (stage >= 2 && trait && traitSprites[trait]) {
+      // Map stage (if > 5, cap at 5)
+      const mappedStage = Math.min(stage, 5);
+      sprite = (traitSprites[trait][mappedStage] as unknown) as PixelMap;
+  }
 
   const spriteSvg = renderer.render(sprite, palette as any);
 
@@ -37,7 +43,7 @@ export function renderPetCard(pet: Pet): string {
   const getStatColor = (val: number) => val >= 70 ? '#4caf50' : val >= 40 ? '#ff9800' : '#f44336';
 
   return `
-    <svg width="420" height="200" viewBox="0 0 420 200" xmlns="http://www.w3.org/2000/svg">
+    <svg width="420" height="220" viewBox="0 0 420 220" xmlns="http://www.w3.org/2000/svg">
       <defs>
         <style>
           .stat-text { font-family: sans-serif; font-size: 11px; fill: #aaa; }
@@ -48,7 +54,7 @@ export function renderPetCard(pet: Pet): string {
           .logo-text-outline { font-family: system-ui, -apple-system, sans-serif; font-size: 22px; font-weight: 800; fill: none; stroke: #6366f1; stroke-width: 1.2; letter-spacing: 0.05em; }
         </style>
       </defs>
-      <rect width="420" height="200" rx="16" fill="#1a1a2e" />
+      <rect width="420" height="220" rx="16" fill="#1a1a2e" />
       <!-- GitPet Logo (왼쪽 상단) -->
       <g transform="translate(20, 28)">
         <text x="0" y="0" class="logo-text-outline" text-anchor="start">GitPet</text>
@@ -80,7 +86,7 @@ export function renderPetCard(pet: Pet): string {
           <rect y="75" width="${health * 1.8}" height="10" rx="5" fill="${getStatColor(health)}" />
         </g>
         
-        <text x="0" y="150" class="footer-text">petgotchi.dev • ${trait || (stage === 0 ? 'Egg' : 'Youngling')} • ${state.toUpperCase()}</text>
+        <text x="0" y="165" class="footer-text">petgotchi.dev • ${trait || (stage === 0 ? 'Egg' : 'Youngling')} • ${state.toUpperCase()}</text>
       </g>
     </svg>
   `.trim();

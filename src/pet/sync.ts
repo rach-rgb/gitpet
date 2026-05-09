@@ -153,12 +153,67 @@ export async function syncAndDecay(env: { DB: D1Database; TOKEN_ENCRYPTION_KEY: 
                 diversityScore += 1.0;
             }
 
+            // Streak Calculation
+            let newStreakCurrent = pet.streakCurrent;
+            let newStreakLongest = pet.streakLongest;
+            let newStreakLastDate = pet.streakLastDate;
+
+            if (xpGain > 0) {
+                // If there was any activity scoring XP, evaluate streak
+                const today = new Date(now * 1000).toISOString().split('T')[0];
+                if (today !== pet.streakLastDate) {
+                    const yesterdayDate = new Date((now - 86400) * 1000).toISOString().split('T')[0];
+                    if (pet.streakLastDate === yesterdayDate) {
+                        newStreakCurrent += 1;
+                    } else {
+                        newStreakCurrent = 1; // broken streak, reset to 1
+                    }
+                    newStreakLastDate = today;
+                    if (newStreakCurrent > newStreakLongest) {
+                        newStreakLongest = newStreakCurrent;
+                    }
+                    
+                    // 5-day streak bonus
+                    if (newStreakCurrent > 0 && newStreakCurrent % 5 === 0) {
+                        hungerBonus += 15;
+                        happinessBonus += 15;
+                        healthBonus += 30;
+                        xpGain += 30 * xpMult;
+                        
+                        await db.logActivity({
+                            userId: user.user_id,
+                            petId: pet.petId,
+                            eventType: 'streak_bonus',
+                            githubEventId: null,
+                            repoName: null,
+                            hungerDelta: 15,
+                            happinessDelta: 15,
+                            healthDelta: 30,
+                            xpDelta: Math.floor(30 * xpMult),
+                            multiplier: xpMult,
+                            scoredAt: now,
+                            logId: crypto.randomUUID(),
+                            commitCount: null,
+                            linesChanged: null,
+                            notes: `5-day streak (${newStreakCurrent} days)`
+                        });
+                    }
+                }
+            } else {
+                // Check if streak is broken by inactivity
+                const today = new Date(now * 1000).toISOString().split('T')[0];
+                const yesterdayDate = new Date((now - 86400) * 1000).toISOString().split('T')[0];
+                if (pet.streakLastDate && pet.streakLastDate !== today && pet.streakLastDate !== yesterdayDate) {
+                    newStreakCurrent = 0; // broken streak
+                }
+            }
+
             // Save trait scores
             const currentTally = await db.fetchTraitTally(user.user_id);
             if (currentTally && !currentTally.isLocked) {
                 // Streak score calculation: 연속 일수 × 0.3
-                // We'll update streakScore based on pet.streakCurrent
-                const streakScore = pet.streakCurrent * 0.3;
+                // We'll update streakScore based on newStreakCurrent
+                const streakScore = newStreakCurrent * 0.3;
 
                 await db.upsertTraitTally(user.user_id, {
                     soloCommitScore: (currentTally.soloCommitScore || 0) + soloScore,
@@ -175,11 +230,14 @@ export async function syncAndDecay(env: { DB: D1Database; TOKEN_ENCRYPTION_KEY: 
             const decay = hoursElapsed * 0.4 * decayMult;
 
             // 5. Update pet stats
-            const updatedStats = {
+            const updatedStats: Partial<Pet> = {
                 hunger: Math.max(0, Math.min(100, pet.hunger + hungerBonus - decay)),
                 happiness: Math.max(0, Math.min(100, pet.happiness + happinessBonus - decay)),
                 health: Math.max(0, Math.min(100, pet.health + healthBonus - decay)),
-                xp: pet.xp + xpGain
+                xp: pet.xp + xpGain,
+                streakCurrent: newStreakCurrent,
+                streakLongest: newStreakLongest,
+                streakLastDate: newStreakLastDate
             };
 
             await db.updatePetStats(pet.petId, updatedStats);

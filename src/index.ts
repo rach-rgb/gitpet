@@ -15,6 +15,7 @@ type Bindings = {
     TOKEN_ENCRYPTION_KEY: string;
     SESSION_SIGNING_KEY: string;
     ENABLE_DEBUG_LOGIN: string;
+    ENABLE_DEMO: string;
 };
 
 const app = new Hono<{ Bindings: Bindings }>();
@@ -65,6 +66,10 @@ app.get('/', async (c) => {
     const db = new Database(c.env.DB);
     const user = await getAuthUser(c, db);
 
+    if (user && c.req.query('no_redirect') !== 'true') {
+        return c.redirect('/dashboard');
+    }
+
     return c.html(renderLayout('Home', `
         <div class="glass-card" style="text-align: center;">
             <h1>Grow your Pet with Code 👾</h1>
@@ -75,9 +80,12 @@ app.get('/', async (c) => {
                 <a href="/dashboard" class="btn">Go to Dashboard</a>
             ` : `
                 <a href="/auth/login" class="btn">Connect with GitHub</a>
-                <div style="margin-top: 1rem;">
-                    <a href="/auth/debug" style="color: var(--text-muted); font-size: 0.8rem; text-decoration: none;">[Dev] Debug Login</a>
+                ${(c.env.ENABLE_DEBUG_LOGIN === 'true' || c.env.ENABLE_DEMO === 'true' || c.req.query('demo') === 'true') ? `
+                <div style="margin-top: 1.5rem; display: flex; flex-direction: column; gap: 0.5rem; align-items: center;">
+                    <a href="/auth/debug" style="color: var(--primary); font-size: 0.85rem; text-decoration: none; font-weight: 600; opacity: 0.8; transition: opacity 0.2s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.8'">🚀 [Dev] Debug Login</a>
+                    <a href="/auth/debug/sprites" style="color: var(--text-muted); font-size: 0.75rem; text-decoration: none; opacity: 0.6; transition: opacity 0.2s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.8'">🎨 Sprite Viewer</a>
                 </div>
+                ` : ''}
             `}
         </div>
         <div style="margin-top: 3rem; display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
@@ -199,6 +207,19 @@ app.post('/api/user/delete', async (c) => {
     return c.redirect('/');
 });
 
+app.post('/api/pet/reset', async (c) => {
+    const db = new Database(c.env.DB);
+    const user = await getAuthUser(c, db);
+    if (!user) return c.redirect('/auth/login');
+
+    const pet = await db.fetchPet(user.userId);
+    if (pet) {
+        await db.deletePet(pet.petId);
+    }
+    
+    return c.redirect('/onboarding');
+});
+
 app.post('/api/pet', async (c) => {
     const db = new Database(c.env.DB);
     const user = await getAuthUser(c, db);
@@ -240,11 +261,15 @@ app.get('/dashboard', async (c) => {
 
     return c.html(renderLayout('Dashboard', `
         <div class="glass-card" style="margin-bottom: 2rem; position: relative; padding-bottom: 4rem;">
+            <div style="position: absolute; top: 1.5rem; right: 2rem;">
+                <a href="/guide" style="color: var(--primary); font-size: 0.9rem; text-decoration: none; font-weight: 600;">📖 Guide</a>
+            </div>
             <div style="display: flex; justify-content: center; margin-bottom: 1.5rem;">
                 <img src="/api/card/${user.githubUsername}" alt="Pet Card" style="border-radius: 1rem; width: 100%; max-width: 420px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2);"/>
             </div>
 
-            <div class="guide-section">
+
+
                 <h2 style="margin-bottom: 1.5rem; font-size: 1.25rem;">Recent Activity</h2>
                 ${activities.length > 0 ? `
                     <div style="display: flex; flex-direction: column; gap: 0.75rem; margin-bottom: 2rem;">
@@ -273,7 +298,7 @@ app.get('/dashboard', async (c) => {
                 </h3>
                 <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 0.5rem;">Copy this snippet to your GitHub profile README:</p>
                 <div class="code-snippet" id="snippet" onclick="copySnippet()">
-                    [![Gitpet](https://petgotchi.dev/api/card/${user.githubUsername})](https://petgotchi.dev/u/${user.githubUsername})
+                    ![Gitpet](https://petgotchi.dev/api/card/${user.githubUsername})
                 </div>
                 <p id="copy-msg" style="color: var(--primary); font-size: 0.8rem; height: 1rem; opacity: 0; transition: opacity 0.2s; margin-bottom: 1rem;">Copied to clipboard!</p>
 
@@ -298,10 +323,28 @@ app.get('/dashboard', async (c) => {
                 </details>
             </div>
 
-            <!-- Retire button positioned in bottom corner -->
-            <div style="position: absolute; bottom: 1.5rem; right: 2rem;">
+            <!-- Actions positioned in bottom corner -->
+            <div style="position: absolute; bottom: 1.5rem; right: 2rem; display: flex; gap: 1rem;">
+                ${pet.stage === 5 ? `
                 <form action="/api/pet/retire?petId=${pet.petId}" method="POST" onsubmit="return confirm('Really retire your pet?')">
                     <button type="submit" style="background: transparent; border: none; color: #f44336; font-size: 0.8rem; cursor: pointer; opacity: 0.6; text-decoration: underline;">Retire Pet</button>
+                </form>
+                ` : ''}
+            </div>
+        </div>
+
+        <div class="glass-card" style="margin-bottom: 2rem; border: 1px solid rgba(244, 67, 54, 0.2);">
+            <h2 style="color: #f44336; margin-bottom: 1rem; font-size: 1.1rem;">Danger Zone</h2>
+            <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1.5rem;">
+                These actions are permanent and cannot be undone. All data will be immediately removed from our databases.
+            </p>
+            <div style="display: flex; gap: 1rem;">
+                <form action="/api/pet/reset" method="POST" onsubmit="return confirm('Are you sure you want to reset your pet? All growth will be lost.')">
+                    <button type="submit" class="btn" style="background: rgba(244, 67, 54, 0.1); color: #f44336; border: 1px solid rgba(244, 67, 54, 0.3);">Restart Pet</button>
+                </form>
+                <form action="/api/user/delete" method="POST" onsubmit="event.preventDefault(); const res = prompt('To permanently delete your account and all data, type DELETE below:'); if(res === 'DELETE') this.submit();">
+                    <input type="hidden" name="confirm" value="DELETE" />
+                    <button type="submit" class="btn" style="background: rgba(244, 67, 54, 0.8); color: #fff;">Delete Account</button>
                 </form>
             </div>
         </div>
@@ -348,96 +391,7 @@ app.get('/onboarding', async (c) => {
     `, { username: user.githubUsername }));
 });
 
-app.get('/u/:username', async (c) => {
-    const username = c.req.param('username');
-    const db = new Database(c.env.DB);
-    const authUser = await getAuthUser(c, db);
 
-    const user = await c.env.DB.prepare('SELECT * FROM users WHERE github_username = ?')
-        .bind(username)
-        .first<any>();
-
-    if (!user) return c.notFound();
-
-    const pet = await db.fetchPet(user.user_id);
-    const hof = await db.fetchHallOfFame(user.user_id);
-    const activities = await db.fetchRecentActivity(user.user_id, 5);
-
-    const getEventIcon = (type: string) => {
-        const t = type.toLowerCase();
-        if (t.includes('push')) return '📦';
-        if (t.includes('pullrequestreview')) return '👁️';
-        if (t.includes('pullrequest')) return '🔀';
-        if (t.includes('issue')) return '🎫';
-        return '⚡';
-    };
-
-    return c.html(renderLayout(`${username}'s Pets`, `
-        <div style="text-align: center; margin-bottom: 3rem;">
-            <h1>${username}'s Profile</h1>
-        </div>
-        
-        ${pet ? `
-            <div class="glass-card" style="margin-bottom: 2rem;">
-                <h2>Active Pet</h2>
-                <div style="display: flex; justify-content: center;">
-                    <img src="/api/card/${username}" alt="Pet Card" style="border-radius: 1rem; width: 100%; max-width: 420px;"/>
-                </div>
-            </div>
-        ` : `
-            <div class="glass-card" style="text-align: center;">
-                <p style="color: var(--text-muted);">No active pet found.</p>
-            </div>
-        `}
-
-        <div class="glass-card" style="margin-bottom: 2rem;">
-            <h2>Recent Activity</h2>
-            ${activities.length > 0 ? `
-                <div style="display: flex; flex-direction: column; gap: 0.75rem;">
-                    ${activities.map((a: any) => `
-                        <div style="display: flex; align-items: center; justify-content: space-between; padding: 0.75rem; background: rgba(15, 23, 42, 0.5); border-radius: 0.75rem; border: 1px solid var(--border);">
-                            <div style="display: flex; align-items: center; gap: 0.75rem;">
-                                <span style="font-size: 1.2rem;">${getEventIcon(a.event_type)}</span>
-                                <div>
-                                    <div style="font-weight: 600; font-size: 0.9rem; color: var(--text);">${a.event_type.replace('Event', '').replace(/([A-Z])/g, ' $1').trim().toUpperCase()}</div>
-                                    <div style="font-size: 0.75rem; color: var(--text-muted);">${a.repo_name || 'GitHub Activity'}</div>
-                                </div>
-                            </div>
-                            <div style="text-align: right;">
-                                <div style="font-weight: 700; color: var(--primary); font-size: 0.85rem;">+${a.xp_delta} XP</div>
-                                <div style="font-size: 0.7rem; color: var(--text-muted);">${new Date(a.scored_at * 1000).toLocaleDateString()}</div>
-                            </div>
-                        </div>
-                    `).join('')}
-                </div>
-            ` : `
-                <p style="color: var(--text-muted); font-size: 0.9rem;">No recent activity recorded yet.</p>
-            `}
-        </div>
-        
-        <div class="glass-card" style="margin-top: 2rem;">
-            <h2>Hall of Fame</h2>
-            ${hof.length > 0 ? `
-                <ul style="list-style: none;">
-                    ${hof.map((h: any) => `
-                        <li style="padding: 1rem 0; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;">
-                            <div>
-                                <div style="font-weight: 800; color: var(--primary);">${h.name}</div>
-                                <div style="font-size: 0.8rem; color: var(--text-muted);">${h.trait} • ${h.difficulty.toUpperCase()}</div>
-                            </div>
-                            <div style="text-align: right;">
-                                <div style="font-weight: 600;">${h.xp} XP</div>
-                                <div style="font-size: 0.8rem; color: var(--text-muted);">Retired: ${new Date(h.retired_at * 1000).toLocaleDateString()}</div>
-                            </div>
-                        </li>
-                    `).join('')}
-                </ul>
-            ` : `
-                <p style="color: var(--text-muted);">No retired pets yet.</p>
-            `}
-        </div>
-    `, authUser ? { username: authUser.githubUsername } : undefined));
-});
 
 app.get('/guide', async (c) => {
     const db = new Database(c.env.DB);
