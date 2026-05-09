@@ -25,7 +25,7 @@ GitChi는 단순한 위젯이 아닙니다. 당신의 코딩 생활을 그대로
 - **🏃 Sprinter**: 매일 쉬지 않고 연속 기록을 이어가는 꾸준한 러너.
 
 #### 3. 실시간 진화 📈
-펫은 4단계를 거쳐 성장합니다: **알 → 새끼 → 성체 → 장로**.
+펫은 5단계를 거쳐 성장합니다: **알 → 새끼 → 청소년 → 성체 → 장로**.
 성장할수록 외형이 변화하며 더 복잡한 상태 수치를 갖게 됩니다. 꾸준한 기여로 전설적인 장로 단계에 도달해 보세요!
 
 ---
@@ -76,7 +76,7 @@ As your pet grows, it develops a unique **Trait** based on your coding style:
 - **🏃 Sprinter**: For the consistent coders who never break their daily streak.
 
 #### 3. Real-Time Evolution 📈
-Your pet goes through 4 major life stages: **Hatchling → Fledgling → Adult → Elder**.
+Your pet goes through 5 life stages: **Egg → Hatchling → Fledgling → Adult → Elder**.
 Each stage unlocks new visuals and more complex status bars. Keep your contributions steady to reach the legendary Elder stage!
 
 ---

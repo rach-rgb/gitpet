@@ -87,3 +87,12 @@ apiRouter.post('/pet/retire', async (c) => {
         return c.json({ error: (error as Error).message }, 400);
     }
 });
+
+apiRouter.get('/locale', (c) => {
+    const lang = c.req.query('lang') || 'ko';
+    const referer = c.req.header('Referer') || '/';
+    
+    // Set cookie for 1 year
+    c.header('Set-Cookie', `lang=${lang}; Path=/; Max-Age=31536000; HttpOnly; SameSite=Lax`);
+    return c.redirect(referer);
+});
