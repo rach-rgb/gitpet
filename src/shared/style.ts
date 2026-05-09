@@ -176,7 +176,7 @@ export function renderLayout(title: string, content: string, user?: { username: 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>${title} | Gitpet</title>
+    <title>${title} | GitChi</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&display=swap" rel="stylesheet">
@@ -184,7 +184,7 @@ export function renderLayout(title: string, content: string, user?: { username: 
 </head>
 <body>
     <header>
-        <a href="/" class="logo">👾 Gitpet</a>
+        <a href="/" class="logo">👾 GitChi</a>
         <nav>
             ${user ? `
                 <a href="/dashboard">Dashboard</a>
@@ -201,7 +201,7 @@ export function renderLayout(title: string, content: string, user?: { username: 
         ${content}
     </main>
     <footer>
-        &copy; 2024 Gitpet Project • Powered by Cloudflare Workers & D1
+        &copy; 2024 GitChi Project • Powered by Cloudflare Workers & D1
     </footer>
 </body>
 </html>

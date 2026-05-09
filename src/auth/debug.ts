@@ -1,6 +1,8 @@
 import { Hono } from 'hono';
 import { setCookie } from 'hono/cookie';
 import { signSession } from '../shared/utils';
+import { Database } from '../shared/db';
+import { PetStage, PetTrait } from '../shared/types';
 
 type Bindings = {
     DB: D1Database;
@@ -9,23 +11,21 @@ type Bindings = {
 
 const debugApp = new Hono<{ Bindings: Bindings }>();
 
-/**
- * Debug login route for local development.
- * Automatically logs in as 'demo_user' (mock-user-123).
- */
-debugApp.get('/debug', async (c) => {
-    const mockUserId = 'mock-user-123';
-    const sessionId = await signSession(mockUserId, c.env.SESSION_SIGNING_KEY);
+const MOCK_USER_ID = 'mock-user-123';
+const MOCK_USERNAME = 'demo_user';
 
-    // Also create session in DB
-    const { Database } = await import('../shared/db');
+/**
+ * Debug login action.
+ */
+debugApp.get('/login', async (c) => {
+    const sessionId = await signSession(MOCK_USER_ID, c.env.SESSION_SIGNING_KEY);
     const db = new Database(c.env.DB);
     const expiresAt = Math.floor(Date.now() / 1000) + (60 * 60 * 24 * 30);
-    await db.createSession(mockUserId, sessionId, expiresAt);
+    await db.createSession(MOCK_USER_ID, sessionId, expiresAt);
 
     setCookie(c, 'session', sessionId, {
         httpOnly: true,
-        secure: false, // Local dev might not be HTTPS
+        secure: false,
         sameSite: 'Lax',
         path: '/',
         maxAge: 60 * 60 * 24 * 30,
@@ -35,157 +35,163 @@ debugApp.get('/debug', async (c) => {
 });
 
 /**
- * Debug viewer for all sprites across all stages and traits.
+ * Update stats action.
  */
-debugApp.get('/debug/sprites', async (c) => {
-    const { renderPetCard } = await import('../card/renderer');
-    const { renderLayout } = await import('../shared/style');
+debugApp.post('/stats', async (c) => {
+    const db = new Database(c.env.DB);
+    const body = await c.req.parseBody();
 
-    const traits = ['owl', 'lone_coder', 'collaborator', 'craftsman', 'architect', 'sprinter'];
-    const stages = [2, 3, 4, 5];
-    const states = ['healthy', 'hungry', 'sad', 'sick', 'dormant'];
+    const pet = await db.fetchPet(MOCK_USER_ID);
+    if (!pet) return c.text('Pet not found', 404);
 
-    let html = `
-        <div style="max-width: 1200px; margin: 0 auto; padding: 3rem 2rem;">
-            <header style="margin-bottom: 3rem; border-bottom: 1px solid var(--border); padding-bottom: 1.5rem;">
-                <h1 style="color: white; margin-bottom: 0.5rem; font-size: 2.5rem; font-weight: 800;">Sprite Gallery</h1>
-                <p style="color: var(--text-muted); font-size: 1.1rem;">A comprehensive overview of all evolution stages and emotional states.</p>
-            </header>
+    await db.updatePetStats(pet.petId, {
+        hunger: parseFloat(body.hunger as string),
+        happiness: parseFloat(body.happiness as string),
+        health: parseFloat(body.health as string),
+        xp: parseInt(body.xp as string),
+        stage: parseInt(body.stage as string) as PetStage,
+        trait: body.trait as PetTrait,
+    });
 
-            <div style="display: flex; flex-direction: column; gap: 5rem;">
-    `;
-
-    for (const trait of traits) {
-        html += `
-            <section>
-                <h2 style="color: var(--primary); text-transform: capitalize; font-size: 1.5rem; margin-bottom: 2rem; display: flex; align-items: center; gap: 0.75rem;">
-                    <span style="opacity: 0.5;">#</span> ${trait.replace('_', ' ')}
-                </h2>
-                <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(380px, 1fr)); gap: 1.5rem;">
-        `;
-        for (const stage of stages) {
-            const pet = {
-                name: `Stage ${stage}`,
-                hunger: 100, happiness: 100, health: 100, xp: stage * stage * 10,
-                difficulty: 'normal', stage: stage, trait: trait, isDormant: 0
-            } as any;
-            html += `
-                <div style="background: rgba(15, 23, 42, 0.3); border-radius: 1rem; border: 1px solid var(--border); padding: 0.5rem; transition: transform 0.2s, border-color 0.2s;" onmouseover="this.style.transform='translateY(-4px)'; this.style.borderColor='var(--primary)'" onmouseout="this.style.transform='none'; this.style.borderColor='var(--border)'">
-                    ${renderPetCard(pet)}
-                </div>
-            `;
-        }
-        html += `</div></section>`;
-    }
-
-    html += `
-            <section style="margin-top: 4rem;">
-                <header style="margin-bottom: 2rem; border-bottom: 1px solid var(--border); padding-bottom: 1rem;">
-                    <h2 style="color: white; font-size: 1.8rem; font-weight: 700;">State Testing</h2>
-                    <p style="color: var(--text-muted);">Previewing 'Lone Coder' (Stage 3) across different emotional states.</p>
-                </header>
-                <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(380px, 1fr)); gap: 1.5rem;">
-    `;
-
-    for (const state of states) {
-        let hunger = 100, happiness = 100, health = 100, isDormant = 0;
-        if (state === 'hungry') hunger = 10;
-        if (state === 'sad') happiness = 10;
-        if (state === 'sick') health = 10;
-        if (state === 'dormant') isDormant = 1;
-
-        const pet = {
-            name: state.toUpperCase(),
-            hunger, happiness, health, xp: 90,
-            difficulty: 'normal', stage: 3, trait: 'lone_coder', isDormant
-        } as any;
-        html += `
-            <div style="background: rgba(15, 23, 42, 0.3); border-radius: 1rem; border: 1px solid var(--border); padding: 0.5rem;">
-                ${renderPetCard(pet)}
-            </div>
-        `;
-    }
-    html += `</div></section></div></div>`;
-
-    return c.html(renderLayout('Sprite Debug', html));
+    return c.redirect('/debug?msg=Stats updated');
 });
 
 /**
- * Resolution comparison test page.
+ * Simulate activity action.
  */
-debugApp.get('/debug/resolution-test', async (c) => {
-    const { renderPetCard } = await import('../card/renderer');
+debugApp.post('/activity', async (c) => {
+    const db = new Database(c.env.DB);
+    const body = await c.req.parseBody();
+    const type = body.type as string;
+
+    const pet = await db.fetchPet(MOCK_USER_ID);
+    if (!pet) return c.text('Pet not found', 404);
+
+    let hunger = 0, happiness = 0, health = 0, xp = 0;
+
+    if (type === 'PUSH') { hunger = 15; happiness = 5; health = 5; xp = 10; }
+    else if (type === 'PR_OPEN') { hunger = 10; happiness = 15; health = 0; xp = 15; }
+    else if (type === 'PR_MERGE') { hunger = 15; happiness = 30; health = 10; xp = 25; }
+    else if (type === 'REVIEW') { hunger = 5; happiness = 20; health = 10; xp = 15; }
+
+    await db.logActivity({
+        userId: MOCK_USER_ID,
+        petId: pet.petId,
+        eventType: type,
+        githubEventId: `debug-${Date.now()}`,
+        repoName: 'debug/repo',
+        hungerDelta: hunger,
+        happinessDelta: happiness,
+        healthDelta: health,
+        xpDelta: xp,
+        multiplier: 1.0,
+        scoredAt: Math.floor(Date.now() / 1000),
+        logId: crypto.randomUUID(),
+        commitCount: null,
+        linesChanged: null,
+        notes: `Debug Simulation: ${type}`
+    });
+
+    await db.updatePetStats(pet.petId, {
+        hunger: Math.max(0, Math.min(100, pet.hunger + hunger)),
+        happiness: Math.max(0, Math.min(100, pet.happiness + happiness)),
+        health: Math.max(0, Math.min(100, pet.health + health)),
+        xp: pet.xp + xp
+    });
+
+    return c.redirect(`/debug?msg=Activity simulated: ${type}`);
+});
+
+/**
+ * Combined Debug Dashboard.
+ */
+debugApp.get('/', async (c) => {
+    const db = new Database(c.env.DB);
+    const pet = await db.fetchPet(MOCK_USER_ID);
+
     const { renderLayout } = await import('../shared/style');
-    const { SpriteRenderer } = await import('../card/sprite-renderer');
+    const { renderPetCard } = await import('../card/renderer');
 
-    // Sample JSONs
-    const loneCoder16 = (await import('../sprites/traits/lone_coder.json')).default;
-    const loneCoder32 = (await import('../sprites/traits/test_32.json')).default;
-    const loneCoder64 = (await import('../sprites/traits/test_64.json')).default;
+    const msg = c.req.query('msg');
 
-    const renderer = new SpriteRenderer();
-    const palette = renderer.getPaletteForState('lone_coder', 'healthy');
-
-    const renderCustom = (sprite: any, label: string, customPalette?: any) => {
-        const svg = renderer.render(sprite, customPalette || palette as any);
-        return `
-            <div style="background: rgba(15, 23, 42, 0.3); border-radius: 1rem; border: 1px solid var(--border); padding: 1.5rem; text-align: center;">
-                <h3 style="color: var(--primary); margin-bottom: 1rem;">${label}</h3>
-                <div style="margin-bottom: 1.5rem; display: flex; justify-content: center;">
-                    <svg width="200" height="200" viewBox="0 0 200 200" style="background: #1a1a2e; border-radius: 0.5rem;">
-                        <g transform="translate(20, 20)">
-                            ${svg}
-                        </g>
-                    </svg>
-                </div>
-                <div style="font-size: 0.8rem; color: var(--text-muted);">
-                    Resolution: ${sprite.width}x${sprite.height}<br>
-                    Scale: ${sprite.scale}<br>
-                    Complexity: ${sprite.frames.default.flat().filter((x: any) => x !== 0).length} pixels
-                </div>
-            </div>
-        `;
-    };
-
-    const owlSprite = (await import('../sprites/shared/owl_hatchling.json')).default;
-    const owlFinalSprite = (await import('../sprites/traits/owl_final.json')).default;
+    const traits = ['lone_coder', 'collaborator', 'craftsman', 'architect', 'sprinter'];
+    const stages = [2, 3, 4];
 
     let html = `
-        <div style="max-width: 1200px; margin: 0 auto; padding: 3rem 2rem;">
-            <header style="margin-bottom: 3rem; border-bottom: 1px solid var(--border); padding-bottom: 1.5rem;">
-                <h1 style="color: white; margin-bottom: 0.5rem; font-size: 2.5rem; font-weight: 800;">Resolution Laboratory</h1>
-                <p style="color: var(--text-muted); font-size: 1.1rem;">Comparing pixel art fidelity across different grid sizes.</p>
-            </header>
+        <div style="max-width: 1200px; margin: 0 auto; padding: 2rem;">
+            ${msg ? `<div style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); color: #10b981; padding: 1rem; border-radius: 0.75rem; margin-bottom: 2rem; font-weight: 600;">✅ ${msg}</div>` : ''}
 
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem; margin-bottom: 4rem;">
-                ${renderCustom(loneCoder16, '16x16 (Original)')}
-                ${renderCustom(loneCoder32, '32x32 (Enhanced)')}
-                ${renderCustom(loneCoder64, '64x64 (Ultra)')}
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-bottom: 3rem;">
+                <!-- Live Preview -->
+                <div class="glass-card" style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 2rem; min-height: 400px;">
+                    <h3 style="margin-bottom: 1.5rem; color: var(--text-muted); font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.1em;">Live Card Preview</h3>
+                    ${pet ? `
+                        <img src="/api/card/${MOCK_USERNAME}?t=${Date.now()}" style="width: 100%; max-width: 420px; border-radius: 1rem; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);" />
+                        <p style="margin-top: 1.5rem; font-size: 0.8rem; color: var(--text-muted);">Points to /api/card/${MOCK_USERNAME}</p>
+                    ` : `
+                        <div style="color: var(--text-muted); font-style: italic;">No pet found for mock user.</div>
+                    `}
+                </div>
+
+                <!-- Control Panel -->
+                <div class="glass-card" style="padding: 2rem;">
+                    <h3 style="margin-bottom: 1.5rem; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem;">Control Panel</h3>
+                    
+                    <section style="margin-bottom: 2rem;">
+                        <h4 style="font-size: 0.85rem; color: var(--primary); margin-bottom: 1rem;">Simulate GitHub Activity</h4>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+                            <form action="/debug/activity" method="POST"><input type="hidden" name="type" value="PUSH"/><button type="submit" class="btn" style="width: 100%; font-size: 0.8rem; padding: 0.6rem;">Push (Commit)</button></form>
+                            <form action="/debug/activity" method="POST"><input type="hidden" name="type" value="PR_OPEN"/><button type="submit" class="btn" style="width: 100%; font-size: 0.8rem; padding: 0.6rem;">PR Opened</button></form>
+                            <form action="/debug/activity" method="POST"><input type="hidden" name="type" value="PR_MERGE"/><button type="submit" class="btn" style="width: 100%; font-size: 0.8rem; padding: 0.6rem;">PR Merged</button></form>
+                            <form action="/debug/activity" method="POST"><input type="hidden" name="type" value="REVIEW"/><button type="submit" class="btn" style="width: 100%; font-size: 0.8rem; padding: 0.6rem;">Code Review</button></form>
+                        </div>
+                    </section>
+
+                    <section>
+                        <h4 style="font-size: 0.85rem; color: var(--primary); margin-bottom: 1rem;">Manual Stat Editor</h4>
+                        <form action="/debug/stats" method="POST" style="display: flex; flex-direction: column; gap: 1rem;">
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                                <div>
+                                    <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.25rem;">Hunger (0-100)</label>
+                                    <input type="number" name="hunger" value="${pet?.hunger || 100}" step="1" min="0" max="100" />
+                                </div>
+                                <div>
+                                    <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.25rem;">Happiness (0-100)</label>
+                                    <input type="number" name="happiness" value="${pet?.happiness || 100}" step="1" min="0" max="100" />
+                                </div>
+                                <div>
+                                    <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.25rem;">Health (0-100)</label>
+                                    <input type="number" name="health" value="${pet?.health || 100}" step="1" min="0" max="100" />
+                                </div>
+                                <div>
+                                    <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.25rem;">XP</label>
+                                    <input type="number" name="xp" value="${pet?.xp || 0}" step="10" />
+                                </div>
+                            </div>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                                <div>
+                                    <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.25rem;">Stage (0-4)</label>
+                                    <select name="stage">
+                                        ${[0, 1, 2, 3, 4].map(s => `<option value="${s}" ${pet?.stage === s ? 'selected' : ''}>Stage ${s}</option>`).join('')}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.25rem;">Trait</label>
+                                    <select name="trait">
+                                        <option value="">None (Youngling)</option>
+                                        ${traits.map(t => `<option value="${t}" ${pet?.trait === t ? 'selected' : ''}>${t.toUpperCase()}</option>`).join('')}
+                                    </select>
+                                </div>
+                            </div>
+                            <button type="submit" class="btn" style="margin-top: 0.5rem; background: rgba(255,255,255,0.1); border: 1px solid var(--border);">Update Pet Stats</button>
+                        </form>
+                    </section>
+                </div>
             </div>
-
-            <header style="margin-bottom: 2rem; border-bottom: 1px solid var(--border); padding-bottom: 1rem;">
-                <h2 style="color: white; font-size: 1.8rem; font-weight: 700;">Real-world Application: Owl Hatchling</h2>
-                <p style="color: var(--text-muted);">A clean 32x32 sprite generated from high-res source.</p>
-            </header>
-
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem; margin-bottom: 4rem;">
-                ${renderCustom(owlSprite, '32x32 Original (Palette)', renderer.getPaletteForState('owl', 'healthy'))}
-                ${renderCustom(owlFinalSprite, '32x32 Final (High Fidelity)', {})}
-            </div>
-
-            <section class="glass-card" style="padding: 2rem;">
-                <h2 style="color: white; margin-bottom: 1.5rem;">Fidelity Analysis</h2>
-                <p style="color: var(--text-muted); line-height: 1.6;">
-                    Increasing the resolution allows for smoother curves, more detailed facial expressions, and complex shading patterns. 
-                    However, it also increases the SVG payload size. 
-                    <br><br>
-                    <b>Recommendation:</b> 32x32 provides a great balance between "pixel art" charm and sufficient detail for evolution stages.
-                </p>
-            </section>
         </div>
     `;
 
-    return c.html(renderLayout('Resolution Test', html));
+    return c.html(renderLayout('Debug Dashboard', html));
 });
 
 export { debugApp };

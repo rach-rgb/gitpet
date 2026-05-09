@@ -10,8 +10,7 @@ const EVOLUTION_THRESHOLDS: Record<number, { days: number, xp: number }> = {
     0: { days: 0, xp: 1 },      // Egg to Hatchling (First commit)
     1: { days: 10, xp: 150 },   // Hatchling to Fledgling (Trait Lock point)
     2: { days: 30, xp: 600 },   // Fledgling to Adult
-    3: { days: 90, xp: 1500 },  // Adult to Elder
-    4: { days: 180, xp: 5000 }  // Elder to Legendary
+    3: { days: 90, xp: 1500 },  // Adult to Elder (Final Stage)
 };
 
 /**
@@ -24,7 +23,7 @@ export async function checkEvolution(db: Database, pet: Pet): Promise<void> {
     const nextStage = (pet.stage + 1) as PetStage;
     const threshold = EVOLUTION_THRESHOLDS[pet.stage];
 
-    if (!threshold || nextStage > 5) return;
+    if (!threshold || nextStage > 4) return;
 
     const timeCondition = daysSinceBirth >= threshold.days;
     const xpCondition = pet.xp >= threshold.xp;

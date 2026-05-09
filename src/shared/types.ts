@@ -4,7 +4,7 @@
  */
 
 export type Difficulty = 'easy' | 'normal' | 'hard';
-export type PetStage = 0 | 1 | 2 | 3 | 4 | 5;
+export type PetStage = 0 | 1 | 2 | 3 | 4;
 export type PetTrait = 'lone_coder' | 'collaborator' | 'craftsman' | 'architect' | 'sprinter';
 
 export interface User {

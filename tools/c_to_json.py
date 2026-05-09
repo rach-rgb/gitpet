@@ -22,6 +22,13 @@ def main():
         print(f"Error reading file: {e}")
         sys.exit(1)
 
+    # Try to find dimensions in macros
+    width_match = re.search(r'#define\s+\w+_WIDTH\s+(\d+)', content)
+    height_match = re.search(r'#define\s+\w+_HEIGHT\s+(\d+)', content)
+    
+    macro_width = int(width_match.group(1)) if width_match else 0
+    macro_height = int(height_match.group(1)) if height_match else 0
+
     # Extract the data array
     # Looking for something like: static const uint32_t name[1][1024] = { { ... } };
     match = re.search(r'\{[\s\n]*\{([\s\S]*?)\}[\s\n]*\}', content)
@@ -42,18 +49,22 @@ def main():
         print("Error: No hex values found in the data array.")
         sys.exit(1)
 
-    # We assume 32x32 = 1024 pixels
-    width = 32
-    height = 32
-    if len(hex_values) != 1024:
-        print(f"Warning: Found {len(hex_values)} values, expected 1024 for 32x32. Adjusting dimensions if possible.")
-        if len(hex_values) == 256:
-            width = 16
-            height = 16
-        else:
-            # Try to guess or just use 32 as width
-            height = len(hex_values) // 32
-            width = 32
+    # Use macros if found, otherwise guess
+    if macro_width > 0 and macro_height > 0:
+        width = macro_width
+        height = macro_height
+    else:
+        width = 32
+        height = 32
+        if len(hex_values) != 1024:
+            print(f"Warning: Found {len(hex_values)} values, expected 1024 for 32x32. Adjusting dimensions if possible.")
+            if len(hex_values) == 256:
+                width = 16
+                height = 16
+            else:
+                # Try to guess or just use 32 as width
+                height = len(hex_values) // 32
+                width = 32
 
     palette_keys_map = {0: None}
     hex_to_index = {}

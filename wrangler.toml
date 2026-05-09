@@ -1,4 +1,4 @@
-name = "gitpet"
+name = "gitchi"
 main = "src/index.ts"
 compatibility_date = "2024-02-25"
 

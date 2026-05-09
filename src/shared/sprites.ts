@@ -17,40 +17,27 @@ export interface ColorPalette {
     eyeHighlight?: string;
 }
 
-export interface SpritePixel {
-    x: number;
-    y: number;
-    colorKey: keyof ColorPalette | string; // Reference to palette key
-}
-
-export interface SpriteData {
-    version: string;
-    size: { width: number; height: number };
-    pixels: SpritePixel[];
-}
 
 export const BASE_PALETTES: Record<string, ColorPalette> = {
     lone_coder: {
-        outline: '#1e242c',
-        primary: '#4ecca3',
-        secondary: '#45b291',
-        base: '#4ecca3',
-        shadow: '#399e82',
-        highlight: '#74e0bf',
-        accent1: '#f1c40f', // Yellow highlights
-        accent2: '#e67e22',
+        outline: '#110f1d',
+        primary: '#1d2f5d',
+        secondary: '#325388',
+        base: '#1d2f5d',
+        shadow: '#070d23',
+        highlight: '#f8be41',
         eye: '#ffffff',
         eyeHighlight: '#ffffff'
     },
     collaborator: {
-        outline: '#1a2530',
-        primary: '#3498db',
-        secondary: '#2980b9',
-        base: '#3498db',
-        shadow: '#2980b9',
-        highlight: '#5dade2',
-        accent1: '#2ecc71', // Green highlights
-        accent2: '#f1c40f',
+        outline: '#2c1e16',
+        primary: '#e67e22',
+        secondary: '#d35400',
+        base: '#e67e22',
+        shadow: '#d35400',
+        highlight: '#f39c12',
+        accent1: '#3498db', // Sky blue accent
+        accent2: '#5dade2',
         eye: '#ffffff',
         eyeHighlight: '#ffffff'
     },
@@ -98,14 +85,4 @@ export const BASE_PALETTES: Record<string, ColorPalette> = {
         shadow: '#e0e0e0',
         highlight: '#ffffff',
     },
-    owl: {
-        outline: '#110f1d',
-        primary: '#1d2f5d',
-        secondary: '#325388',
-        base: '#1d2f5d',
-        shadow: '#070d23',
-        highlight: '#f8be41',
-        eye: '#ffffff',
-        eyeHighlight: '#ffffff'
-    }
 };

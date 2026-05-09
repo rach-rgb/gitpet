@@ -1,4 +1,4 @@
-import { Pet } from '../shared/types';
+import { Pet, PetStage } from '../shared/types';
 import { SpriteRenderer } from './sprite-renderer';
 import { PixelMap } from '../shared/pixel-map';
 
@@ -32,8 +32,8 @@ export function renderPetCard(pet: Pet): string {
   if (stage === 1) {
       sprite = (hatchlingSprite as unknown) as PixelMap;
   } else if (stage >= 2 && trait && traitSprites[trait]) {
-      // Map stage (if > 5, cap at 5)
-      const mappedStage = Math.min(stage, 5);
+      // Map stage (if > 4, cap at 4)
+      const mappedStage = Math.min(stage, 4) as PetStage;
       sprite = (traitSprites[trait][mappedStage] as unknown) as PixelMap;
   }
 
@@ -55,10 +55,10 @@ export function renderPetCard(pet: Pet): string {
         </style>
       </defs>
       <rect width="420" height="220" rx="16" fill="#1a1a2e" />
-      <!-- GitPet Logo (왼쪽 상단) -->
+      <!-- GitChi Logo (왼쪽 상단) -->
       <g transform="translate(20, 28)">
-        <text x="0" y="0" class="logo-text-outline" text-anchor="start">GitPet</text>
-        <text x="0" y="0" class="logo-text" text-anchor="start">GitPet</text>
+        <text x="0" y="0" class="logo-text-outline" text-anchor="start">GitChi</text>
+        <text x="0" y="0" class="logo-text" text-anchor="start">GitChi</text>
       </g>
       
       <!-- Pet Sprite (60% weight) -->

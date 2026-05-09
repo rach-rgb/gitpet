@@ -17,16 +17,6 @@ export interface ColorPalette {
     eyeHighlight?: string;
 }
 
-export interface SpriteGroup {
-    pixels: [number, number][]; // [row, col]
-}
-
-export interface SpriteAnimationFrame {
-    duration: string;
-    translateY?: number;
-    translateX?: number;
-    rotate?: number;
-}
 
 export interface SpriteAnimation {
     group: string;
