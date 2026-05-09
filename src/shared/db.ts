@@ -204,6 +204,28 @@ export class Database {
         return result.results || [];
     }
 
+    async fetchActivitySince(userId: string, sinceDate: number): Promise<any[]> {
+        const result = await this.db
+            .prepare('SELECT * FROM activity_log WHERE user_id = ? AND scored_at >= ? ORDER BY scored_at DESC')
+            .bind(userId, sinceDate)
+            .all();
+        return result.results || [];
+    }
+
+    async hasEvolvedToday(petId: string): Promise<boolean> {
+        const result = await this.db.prepare(`
+            SELECT scored_at FROM activity_log 
+            WHERE pet_id = ? AND event_type = 'evolution' 
+            ORDER BY scored_at DESC LIMIT 1
+        `).bind(petId).first<any>();
+        
+        if (!result) return false;
+        
+        const today = new Date().toISOString().split('T')[0];
+        const lastEvolutionDate = new Date(result.scored_at * 1000).toISOString().split('T')[0];
+        return today === lastEvolutionDate;
+    }
+
     async createNotification(userId: string, type: string, payload: any): Promise<void> {
         const notificationId = crypto.randomUUID();
         await this.db.prepare('INSERT INTO notifications (notification_id, user_id, type, payload, created_at) VALUES (?, ?, ?, ?, ?)')

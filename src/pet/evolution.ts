@@ -25,6 +25,12 @@ export async function checkEvolution(db: Database, pet: Pet): Promise<void> {
 
     if (!threshold || nextStage > 4) return;
 
+    // Prevent multiple evolutions in a single day (except for 0 -> 1)
+    if (nextStage > 1) {
+        const evolvedToday = await db.hasEvolvedToday(pet.petId);
+        if (evolvedToday) return;
+    }
+
     const timeCondition = daysSinceBirth >= threshold.days;
     const xpCondition = pet.xp >= threshold.xp;
 
@@ -56,6 +62,25 @@ export async function checkEvolution(db: Database, pet: Pet): Promise<void> {
             oldStage: pet.stage,
             newStage: nextStage,
             trait: updates.trait
+        });
+
+        // Log evolution in activity
+        await db.logActivity({
+            userId: pet.userId,
+            petId: pet.petId,
+            eventType: 'evolution',
+            githubEventId: null,
+            repoName: null,
+            hungerDelta: 0,
+            happinessDelta: 0,
+            healthDelta: 0,
+            xpDelta: 0,
+            multiplier: 1.0,
+            scoredAt: now,
+            logId: crypto.randomUUID(),
+            commitCount: null,
+            linesChanged: null,
+            notes: `Evolved to Stage ${nextStage}`
         });
     }
 }

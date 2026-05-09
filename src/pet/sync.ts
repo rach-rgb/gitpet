@@ -37,11 +37,25 @@ export async function syncAndDecay(env: { DB: D1Database; TOKEN_ENCRYPTION_KEY: 
             let qualityScore = 0;
             let diversityScore = 0;
 
-            const xpMult = pet.difficulty === 'easy' ? 1.2 : (pet.difficulty === 'hard' ? 0.8 : 1.0);
+            let xpMult = pet.difficulty === 'easy' ? 1.2 : (pet.difficulty === 'hard' ? 0.8 : 1.0);
+            
+            // Apply Sick/Sad/Hungry penalty to XP gain
+            if (pet.health < 25 || pet.hunger < 40 || pet.happiness < 30) {
+                xpMult *= 0.5;
+            }
+
             const repoNames = new Set<string>();
+            let addedStreakScore = 0;
 
             for (const event of events) {
                 if (await db.isEventProcessed(event.id, user.user_id)) continue;
+                
+                // Ignore events that occurred before the pet was created
+                const eventTime = new Date(event.created_at).getTime() / 1000;
+                if (eventTime < pet.bornAt) {
+                    await db.markEventProcessed(event.id, user.user_id);
+                    continue;
+                }
 
                 let eHunger = 0;
                 let eHappiness = 0;
@@ -173,6 +187,9 @@ export async function syncAndDecay(env: { DB: D1Database; TOKEN_ENCRYPTION_KEY: 
                         newStreakLongest = newStreakCurrent;
                     }
                     
+                    // Accumulate streak score only on the first activity of a new day
+                    addedStreakScore = newStreakCurrent * 0.5;
+                    
                     // 5-day streak bonus
                     if (newStreakCurrent > 0 && newStreakCurrent % 5 === 0) {
                         hungerBonus += 15;
@@ -211,23 +228,19 @@ export async function syncAndDecay(env: { DB: D1Database; TOKEN_ENCRYPTION_KEY: 
             // Save trait scores
             const currentTally = await db.fetchTraitTally(user.user_id);
             if (currentTally && !currentTally.isLocked) {
-                // Streak score calculation: 연속 일수 × 0.3
-                // We'll update streakScore based on newStreakCurrent
-                const streakScore = newStreakCurrent * 0.3;
-
                 await db.upsertTraitTally(user.user_id, {
                     soloCommitScore: (currentTally.soloCommitScore || 0) + soloScore,
                     socialScore: (currentTally.socialScore || 0) + socialScore,
                     qualityScore: (currentTally.qualityScore || 0) + qualityScore,
                     diversityScore: (currentTally.diversityScore || 0) + diversityScore,
-                    streakScore: streakScore // Updated based on current streak
+                    streakScore: (currentTally.streakScore || 0) + addedStreakScore
                 });
             }
 
-            // 4. Calculate decay
+            // 4. Calculate decay (10 points per 24 hours)
             const hoursElapsed = (now - user.last_sync) / 3600;
             const decayMult = getDifficultyMult(pet.difficulty);
-            const decay = hoursElapsed * 0.4 * decayMult;
+            const decay = (hoursElapsed / 24) * 10 * decayMult;
 
             // 5. Update pet stats
             const updatedStats: Partial<Pet> = {

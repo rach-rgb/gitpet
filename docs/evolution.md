@@ -27,8 +27,8 @@ Every GitHub event is mapped to specific stat gains.
 | **PullRequest (Merge)** | +25 | 0 | +30 | +10 |
 | **PR Review / Comment** | +15 | 0 | +20 | 0 |
 
-- **Hunger Decay**: Fullness decreases by **0.4 points per hour**.
-- **Status Effects**: If Fullness or Happiness drops to 0, the pet becomes **Sick** or **Sad**, slowing down XP gain.
+- **Hunger Decay**: Fullness decreases by **10 points per day**.
+- **Status Effects**: If Fullness drops below 40, Happiness below 30, or Health below 25, the pet becomes **Hungry**, **Sad**, or **Sick**. In these states, XP gain is reduced by **50%**.
 
 ---
 

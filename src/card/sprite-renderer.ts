@@ -82,18 +82,38 @@ export class SpriteRenderer {
     /**
      * Translates pet state to a palette transform.
      */
-    getPaletteForState(trait: string | null, state: 'healthy' | 'hungry' | 'sad' | 'sick' | 'dormant' | 'neutral'): ColorPalette {
-        const base = BASE_PALETTES[trait || 'lone_coder'] || BASE_PALETTES.lone_coder;
+    getPaletteForState(trait: string | null, state: 'healthy' | 'hungry' | 'sad' | 'sick' | 'dormant' | 'neutral', petId?: string, stage?: number): ColorPalette {
+        let base = BASE_PALETTES[trait || 'lone_coder'] || BASE_PALETTES.lone_coder;
+
+        // Stage 0 and 1 use random egg color variations
+        if ((stage === 0 || stage === 1) && petId) {
+            const eggVariations = [
+                { base: '#f8d7da', shadow: '#f5c6cb', highlight: '#ffffff' }, // Pink
+                { base: '#d1ecf1', shadow: '#bee5eb', highlight: '#ffffff' }, // Blue
+                { base: '#d4edda', shadow: '#c3e6cb', highlight: '#ffffff' }, // Green
+                { base: '#fff3cd', shadow: '#ffeeba', highlight: '#ffffff' }, // Yellow
+                { base: '#e2e3e5', shadow: '#d6d8db', highlight: '#ffffff' }, // Grey
+                { base: '#e8daef', shadow: '#d1b3e2', highlight: '#ffffff' }, // Purple
+                { base: '#fdebd0', shadow: '#fad7a0', highlight: '#ffffff' }, // Orange
+            ];
+            // Simple hash for deterministic random
+            let hash = 0;
+            for (let i = 0; i < petId.length; i++) {
+                hash = petId.charCodeAt(i) + ((hash << 5) - hash);
+            }
+            const variant = eggVariations[Math.abs(hash) % eggVariations.length];
+            base = { ...BASE_PALETTES.egg, ...variant };
+        }
 
         switch (state) {
             case 'sick':
-                return { ...base, primary: '#8b9a47', secondary: '#6e7a35', base: '#8b9a47', shadow: '#6e7a35', highlight: '#a2b158' }; // Sickly green
+                return { ...base, primary: '#8b9a47', secondary: '#6e7a35', base: '#8b9a47', shadow: '#6e7a35', highlight: '#a2b158' };
             case 'sad':
-                return { ...base, primary: '#708090', secondary: '#4682b4', base: '#708090', shadow: '#4682b4', highlight: '#8da1b3' }; // Muted blue-grey
+                return { ...base, primary: '#708090', secondary: '#4682b4', base: '#708090', shadow: '#4682b4', highlight: '#8da1b3' };
             case 'hungry':
-                return { ...base, primary: '#d2691e', secondary: '#8b4513', base: '#d2691e', shadow: '#8b4513', highlight: '#df7c38' }; // Brownish/Desaturated orange
+                return { ...base, primary: '#d2691e', secondary: '#8b4513', base: '#d2691e', shadow: '#8b4513', highlight: '#df7c38' };
             case 'dormant':
-                return { ...base, outline: '#1a1a1a', primary: '#555555', secondary: '#333333', base: '#555555', shadow: '#333333', highlight: '#777777', accent1: '#444444', accent2: '#666666' }; // Greyscale
+                return { ...base, outline: '#1a1a1a', primary: '#555555', secondary: '#333333', base: '#555555', shadow: '#333333', highlight: '#777777', accent1: '#444444', accent2: '#666666' };
             default:
                 return base;
         }

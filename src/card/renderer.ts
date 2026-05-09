@@ -25,7 +25,7 @@ export function renderPetCard(pet: Pet): string {
   else if (happiness < 30) state = 'sad';
   else if (hunger >= 70 && happiness >= 70 && health >= 70) state = 'healthy';
 
-  const palette = renderer.getPaletteForState(trait, state);
+  const palette = renderer.getPaletteForState(trait, state, pet.petId, stage);
 
   // 2. Select Sprite
   let sprite: PixelMap = (eggSprite as unknown) as PixelMap;

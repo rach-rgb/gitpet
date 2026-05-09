@@ -66,7 +66,9 @@ viewsRouter.get('/dashboard', async (c) => {
     const pet = await db.fetchPet(user.userId);
     if (!pet) return c.redirect('/onboarding');
 
-    const activities = await db.fetchRecentActivity(user.userId, 5);
+    const now = Math.floor(Date.now() / 1000);
+    const sevenDaysAgo = now - 7 * 24 * 60 * 60;
+    const activities = await db.fetchActivitySince(user.userId, sevenDaysAgo);
 
     const getEventIcon = (type: string) => {
         const t = type.toLowerCase();
@@ -74,6 +76,8 @@ viewsRouter.get('/dashboard', async (c) => {
         if (t.includes('pullrequestreview')) return '👁️';
         if (t.includes('pullrequest')) return '🔀';
         if (t.includes('issue')) return '🎫';
+        if (t === 'evolution') return '✨';
+        if (t === 'streak_bonus') return '🔥';
         return '⚡';
     };
 
@@ -86,28 +90,54 @@ viewsRouter.get('/dashboard', async (c) => {
                 <img src="/api/card/${user.githubUsername}?t=${Date.now()}" alt="Pet Card" style="border-radius: 14px; width: 100%; max-width: 420px; box-shadow: var(--shadow);"/>
             </div>
 
-                <h2 style="margin-bottom: 1.5rem; font-size: 1.25rem;">${t('dash_activity')}</h2>
-                ${activities.length > 0 ? `
-                    <div style="display: flex; flex-direction: column; gap: 0.75rem; margin-bottom: 2rem;">
-                        ${activities.map((a: any) => `
-                            <div style="display: flex; align-items: center; justify-content: space-between; padding: 1rem; background: var(--surface-soft); border-radius: 12px; border: 1px solid var(--hairline);">
-                                <div style="display: flex; align-items: center; gap: 1rem;">
-                                    <span style="font-size: 1.5rem;">${getEventIcon(a.event_type)}</span>
-                                    <div>
-                                        <div style="font-weight: 600; font-size: 1rem; color: var(--ink);">${a.event_type.replace('_', ' ').toUpperCase()}</div>
-                                        <div style="font-size: 0.85rem; color: var(--muted);">${a.repo_name || 'GitHub Activity'}</div>
+                <details open style="margin-bottom: 2rem;">
+                    <summary style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; cursor: pointer; list-style: none;">
+                        <h2 style="margin: 0; font-size: 1.25rem; display: inline-flex; align-items: center; gap: 0.5rem;">
+                            <span style="font-size: 0.8em; opacity: 0.5;">▼</span> ${t('dash_activity')}
+                        </h2>
+                        <span style="font-size: 0.8rem; color: var(--muted); background: var(--surface-soft); padding: 0.25rem 0.75rem; border-radius: 20px; border: 1px solid var(--hairline);">${t('dash_sync_info')}</span>
+                    </summary>
+                    ${activities.length > 0 ? `
+                        <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                            ${activities.map((a: any) => {
+                                let eventName = a.event_type.replace(/([A-Z])/g, ' $1').trim();
+                                if (a.event_type === 'evolution') eventName = 'Evolution!';
+                                else if (a.event_type === 'streak_bonus') eventName = 'Streak Bonus';
+                                
+                                const dateObj = new Date(a.scored_at * 1000);
+                                const timeStr = `${(dateObj.getMonth()+1).toString().padStart(2, '0')}/${dateObj.getDate().toString().padStart(2, '0')} ${dateObj.getHours().toString().padStart(2, '0')}:${dateObj.getMinutes().toString().padStart(2, '0')}`;
+                                
+                                const statDetails = [];
+                                if (a.xp_delta > 0) statDetails.push(`<span style="color: var(--primary);">+${a.xp_delta} XP</span>`);
+                                if (a.hunger_delta > 0) statDetails.push(`<span style="color: #e67e22;">+${a.hunger_delta} Food</span>`);
+                                if (a.happiness_delta > 0) statDetails.push(`<span style="color: #f1c40f;">+${a.happiness_delta} Happy</span>`);
+                                if (a.health_delta > 0) statDetails.push(`<span style="color: #2ecc71;">+${a.health_delta} Health</span>`);
+                                
+                                const repoNameDisplay = a.notes ? a.notes : (a.repo_name || 'GitHub Activity');
+
+                                return `
+                                <div style="display: flex; align-items: center; justify-content: space-between; padding: 1rem; background: var(--surface-soft); border-radius: 12px; border: 1px solid var(--hairline);">
+                                    <div style="display: flex; align-items: center; gap: 1rem;">
+                                        <span style="font-size: 1.5rem;">${getEventIcon(a.event_type)}</span>
+                                        <div>
+                                            <div style="font-weight: 600; font-size: 1rem; color: var(--ink); text-transform: capitalize;">${eventName}</div>
+                                            <div style="font-size: 0.85rem; color: var(--muted);">${repoNameDisplay}</div>
+                                        </div>
+                                    </div>
+                                    <div style="text-align: right;">
+                                        <div style="font-weight: 700; font-size: 0.9rem; display: flex; gap: 0.5rem; justify-content: flex-end;">
+                                            ${statDetails.length > 0 ? statDetails.join(' ') : '<span style="color: var(--muted);">Event</span>'}
+                                        </div>
+                                        <div style="font-size: 0.8rem; color: var(--muted);">${timeStr}</div>
                                     </div>
                                 </div>
-                                <div style="text-align: right;">
-                                    <div style="font-weight: 700; color: var(--primary); font-size: 1rem;">+${a.xp_delta} XP</div>
-                                    <div style="font-size: 0.8rem; color: var(--muted);">${new Date(a.scored_at * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
-                                </div>
-                            </div>
-                        `).join('')}
-                    </div>
-                ` : `
-                    <p style="color: var(--muted); font-size: 0.9rem; margin-bottom: 2rem;">${t('dash_no_activity')}</p>
-                `}
+                                `;
+                            }).join('')}
+                        </div>
+                    ` : `
+                        <p style="color: var(--muted); font-size: 0.9rem;">${t('dash_no_activity')}</p>
+                    `}
+                </details>
 
                 <h3 style="margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem; border-top: 1px solid var(--hairline); padding-top: 2rem;">
                     ${t('dash_share_title')}
