@@ -9,7 +9,7 @@ type Bindings = {
     SESSION_SIGNING_KEY: string;
 };
 
-const debugApp = new Hono<{ Bindings: Bindings }>();
+const debugApp = new Hono<{ Bindings: Bindings }>({ strict: false });
 
 const MOCK_USER_ID = 'mock-user-123';
 const MOCK_USERNAME = 'demo_user';
@@ -103,6 +103,23 @@ debugApp.post('/activity', async (c) => {
 });
 
 /**
+ * Direct Card Rendering for Debug User.
+ */
+debugApp.get('/card', async (c) => {
+    const db = new Database(c.env.DB);
+    const pet = await db.fetchPet(MOCK_USER_ID);
+    
+    const { renderPetCard, renderPlaceholderCard } = await import('../card/renderer');
+    
+    if (!pet) return c.body(renderPlaceholderCard(), 200, { 'Content-Type': 'image/svg+xml' });
+
+    return c.body(renderPetCard(pet), 200, {
+        'Content-Type': 'image/svg+xml',
+        'Cache-Control': 'no-cache',
+    });
+});
+
+/**
  * Combined Debug Dashboard.
  */
 debugApp.get('/', async (c) => {
@@ -126,8 +143,8 @@ debugApp.get('/', async (c) => {
                 <div class="glass-card" style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 2rem; min-height: 400px;">
                     <h3 style="margin-bottom: 1.5rem; color: var(--text-muted); font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.1em;">Live Card Preview</h3>
                     ${pet ? `
-                        <img src="/api/card/${MOCK_USERNAME}?t=${Date.now()}" style="width: 100%; max-width: 420px; border-radius: 1rem; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);" />
-                        <p style="margin-top: 1.5rem; font-size: 0.8rem; color: var(--text-muted);">Points to /api/card/${MOCK_USERNAME}</p>
+                        <img src="/debug/card?t=${Date.now()}" style="width: 100%; max-width: 420px; border-radius: 1rem; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);" />
+                        <p style="margin-top: 1.5rem; font-size: 0.8rem; color: var(--text-muted);">Points to /debug/card</p>
                     ` : `
                         <div style="color: var(--text-muted); font-style: italic;">No pet found for mock user.</div>
                     `}

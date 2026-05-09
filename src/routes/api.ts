@@ -5,7 +5,7 @@ import { renderPetCard, renderPlaceholderCard } from '../card/renderer';
 import { deleteCookie } from 'hono/cookie';
 import { Bindings } from '../types';
 
-export const apiRouter = new Hono<{ Bindings: Bindings }>();
+export const apiRouter = new Hono<{ Bindings: Bindings }>({ strict: false });
 
 apiRouter.get('/card/:username', async (c) => {
     const username = c.req.param('username');

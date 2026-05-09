@@ -7,7 +7,7 @@ import { Locale, getT } from '../shared/i18n';
 
 import { getCookie } from 'hono/cookie';
 
-export const viewsRouter = new Hono<{ Bindings: Bindings }>();
+export const viewsRouter = new Hono<{ Bindings: Bindings }>({ strict: false });
 
 // Helper to determine locale from request
 const getLocale = (c: any): Locale => {

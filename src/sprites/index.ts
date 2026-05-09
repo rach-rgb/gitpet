@@ -1,7 +1,3 @@
-import collaboratorStage2 from './traits/collaborator_stage2.json';
-import collaboratorStage3 from './traits/collaborator_stage3.json';
-import collaboratorStage4 from './traits/collaborator_stage4.json';
-
 import craftsmanStage2 from './traits/craftsman_stage2.json';
 import craftsmanStage3 from './traits/craftsman_stage3.json';
 import craftsmanStage4 from './traits/craftsman_stage4.json';
