@@ -11,9 +11,9 @@ export async function retirePet(db: Database, petId: string): Promise<{ retired:
     const pet = await db.fetchPetById(petId);
     if (!pet) throw new Error('Pet not found');
 
-    // 2. Verify eligibility (Stage 5 - Legendary)
-    if (pet.stage < 5) {
-        throw new Error('Only Legendary pets can be retired to the Hall of Fame');
+    // 2. Verify eligibility (Stage 4 - Elder)
+    if (pet.stage < 4) {
+        throw new Error('Only Elder pets can be retired to the Hall of Fame');
     }
 
     // 3. Move to Hall of Fame table

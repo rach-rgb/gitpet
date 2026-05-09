@@ -83,7 +83,7 @@ viewsRouter.get('/dashboard', async (c) => {
                 <a href="/guide" style="color: var(--muted); font-size: 0.9rem; text-decoration: underline; font-weight: 500;">${t('nav_guide')}</a>
             </div>
             <div style="display: flex; justify-content: center; margin-bottom: 3rem;">
-                <img src="/api/card/${user.githubUsername}" alt="Pet Card" style="border-radius: 14px; width: 100%; max-width: 420px; box-shadow: var(--shadow);"/>
+                <img src="/api/card/${user.githubUsername}?t=${Date.now()}" alt="Pet Card" style="border-radius: 14px; width: 100%; max-width: 420px; box-shadow: var(--shadow);"/>
             </div>
 
                 <h2 style="margin-bottom: 1.5rem; font-size: 1.25rem;">${t('dash_activity')}</h2>
