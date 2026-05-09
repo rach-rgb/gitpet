@@ -102,7 +102,12 @@ export class SpriteRenderer {
                 hash = petId.charCodeAt(i) + ((hash << 5) - hash);
             }
             const variant = eggVariations[Math.abs(hash) % eggVariations.length];
-            base = { ...BASE_PALETTES.egg, ...variant };
+            base = { 
+                ...BASE_PALETTES.egg, 
+                ...variant,
+                primary: variant.base,
+                secondary: variant.shadow
+            };
         }
 
         switch (state) {
