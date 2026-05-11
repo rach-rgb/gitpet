@@ -144,7 +144,7 @@ viewsRouter.get('/dashboard', async (c) => {
                 </h3>
                 <p style="color: var(--muted); font-size: 0.9rem; margin-bottom: 0.5rem;">${t('dash_share_desc')}</p>
                 <div class="code-snippet" id="snippet" onclick="copySnippet()">
-                    ![GitChi](${new URL(c.req.url).origin}/api/card/${user.githubUsername})
+                    [![GitChi](${new URL(c.req.url).origin}/api/card/${user.githubUsername})](${new URL(c.req.url).origin}/dashboard)
                 </div>
                 <p id="copy-msg" style="color: var(--primary); font-size: 0.8rem; height: 1rem; opacity: 0; transition: opacity 0.2s; margin-bottom: 1rem;">${t('dash_copied')}</p>
 

@@ -20,7 +20,10 @@ apiRouter.get('/card/:username', async (c) => {
     const pet = await db.fetchPet(user.user_id);
     if (!pet) return c.body(renderPlaceholderCard(), 200, { 'Content-Type': 'image/svg+xml' });
 
-    return c.body(renderPetCard(pet), 200, {
+    const origin = new URL(c.req.url).origin;
+    const dashboardUrl = `${origin}/dashboard`;
+
+    return c.body(renderPetCard(pet, dashboardUrl), 200, {
         'Content-Type': 'image/svg+xml',
         'Cache-Control': 'public, max-age=300',
     });

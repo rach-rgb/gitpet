@@ -11,7 +11,7 @@ import { traitSprites } from '../sprites';
  * Basic SVG renderer for the Pet card.
  * Adheres to .agent/clean-code.md conventions.
  */
-export function renderPetCard(pet: Pet): string {
+export function renderPetCard(pet: Pet, dashboardUrl?: string): string {
   const { name, hunger, happiness, health, xp, difficulty, stage, trait, isDormant } = pet;
   const level = Math.floor(Math.sqrt(xp / 10));
 
@@ -30,11 +30,11 @@ export function renderPetCard(pet: Pet): string {
   // 2. Select Sprite
   let sprite: PixelMap = (eggSprite as unknown) as PixelMap;
   if (stage === 1) {
-      sprite = (hatchlingSprite as unknown) as PixelMap;
+    sprite = (hatchlingSprite as unknown) as PixelMap;
   } else if (stage >= 2 && trait && traitSprites[trait]) {
-      // Map stage (if > 4, cap at 4)
-      const mappedStage = Math.min(stage, 4) as PetStage;
-      sprite = (traitSprites[trait][mappedStage] as unknown) as PixelMap;
+    // Map stage (if > 4, cap at 4)
+    const mappedStage = Math.min(stage, 4) as PetStage;
+    sprite = (traitSprites[trait][mappedStage] as unknown) as PixelMap;
   }
 
   const spriteSvg = renderer.render(sprite, palette as any);
@@ -42,8 +42,7 @@ export function renderPetCard(pet: Pet): string {
   // Stat color calculation
   const getStatColor = (val: number) => val >= 70 ? '#4caf50' : val >= 40 ? '#ff9800' : '#f44336';
 
-  return `
-    <svg width="420" height="220" viewBox="0 0 420 220" xmlns="http://www.w3.org/2000/svg">
+  const content = `
       <defs>
         <style>
           .stat-text { font-family: sans-serif; font-size: 11px; fill: #aaa; }
@@ -86,8 +85,13 @@ export function renderPetCard(pet: Pet): string {
           <rect y="75" width="${health * 1.8}" height="10" rx="5" fill="${getStatColor(health)}" />
         </g>
         
-        <text x="0" y="165" class="footer-text">petgotchi.dev • ${trait || (stage === 0 ? 'Egg' : 'Youngling')} • ${state.toUpperCase()}</text>
+        <text x="0" y="165" class="footer-text">GitChi • ${trait || (stage === 0 ? 'Egg' : 'Youngling')} • ${state.toUpperCase()}</text>
       </g>
+  `;
+
+  return `
+    <svg width="420" height="220" viewBox="0 0 420 220" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+      ${dashboardUrl ? `<a xlink:href="${dashboardUrl}" target="_blank">${content}</a>` : content}
     </svg>
   `.trim();
 }
