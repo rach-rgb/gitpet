@@ -33,3 +33,5 @@ migrations/*.local.sql
 .gemini/
 .agent
 .dev.vars
+
+docs/todo.md

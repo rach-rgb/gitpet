@@ -85,7 +85,7 @@ export function renderPetCard(pet: Pet, dashboardUrl?: string): string {
           <rect y="75" width="${health * 1.8}" height="10" rx="5" fill="${getStatColor(health)}" />
         </g>
         
-        <text x="0" y="165" class="footer-text">GitChi • ${trait || (stage === 0 ? 'Egg' : 'Youngling')} • ${state.toUpperCase()}</text>
+        <text x="0" y="165" class="footer-text">GitChi • ${trait || (stage === 0 ? 'Egg' : 'Youngling')} • ${state.toUpperCase()} • ${xp} XP</text>
       </g>
   `;
 
