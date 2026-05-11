@@ -138,7 +138,7 @@ export async function syncAndDecay(env: { DB: D1Database; TOKEN_ENCRYPTION_KEY: 
                         healthDelta: eHealth,
                         xpDelta: Math.floor(eXp),
                         multiplier: xpMult,
-                        scoredAt: now,
+                        scoredAt: eventTime,
                         logId: crypto.randomUUID(),
                         commitCount: null,
                         linesChanged: null,

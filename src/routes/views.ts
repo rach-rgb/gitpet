@@ -100,22 +100,22 @@ viewsRouter.get('/dashboard', async (c) => {
                     ${activities.length > 0 ? `
                         <div style="display: flex; flex-direction: column; gap: 0.75rem;">
                             ${activities.map((a: any) => {
-                                let eventName = a.event_type.replace(/([A-Z])/g, ' $1').trim();
-                                if (a.event_type === 'evolution') eventName = 'Evolution!';
-                                else if (a.event_type === 'streak_bonus') eventName = 'Streak Bonus';
-                                
-                                const dateObj = new Date(a.scored_at * 1000);
-                                const timeStr = `${(dateObj.getMonth()+1).toString().padStart(2, '0')}/${dateObj.getDate().toString().padStart(2, '0')} ${dateObj.getHours().toString().padStart(2, '0')}:${dateObj.getMinutes().toString().padStart(2, '0')}`;
-                                
-                                const statDetails = [];
-                                if (a.xp_delta > 0) statDetails.push(`<span style="color: var(--primary);">+${a.xp_delta} XP</span>`);
-                                if (a.hunger_delta > 0) statDetails.push(`<span style="color: #e67e22;">+${a.hunger_delta} Food</span>`);
-                                if (a.happiness_delta > 0) statDetails.push(`<span style="color: #f1c40f;">+${a.happiness_delta} Happy</span>`);
-                                if (a.health_delta > 0) statDetails.push(`<span style="color: #2ecc71;">+${a.health_delta} Health</span>`);
-                                
-                                const repoNameDisplay = a.notes ? a.notes : (a.repo_name || 'GitHub Activity');
+        let eventName = a.event_type.replace(/([A-Z])/g, ' $1').trim();
+        if (a.event_type === 'evolution') eventName = 'Evolution!';
+        else if (a.event_type === 'streak_bonus') eventName = 'Streak Bonus';
 
-                                return `
+        const dateObj = new Date(a.scored_at * 1000);
+        const timeStr = `${(dateObj.getMonth() + 1).toString().padStart(2, '0')}/${dateObj.getDate().toString().padStart(2, '0')} ${dateObj.getHours().toString().padStart(2, '0')}:${dateObj.getMinutes().toString().padStart(2, '0')}`;
+
+        const statDetails = [];
+        if (a.xp_delta > 0) statDetails.push(`<span style="color: var(--primary);">+${a.xp_delta} XP</span>`);
+        if (a.hunger_delta > 0) statDetails.push(`<span style="color: #e67e22;">+${a.hunger_delta} Food</span>`);
+        if (a.happiness_delta > 0) statDetails.push(`<span style="color: #f1c40f;">+${a.happiness_delta} Happy</span>`);
+        if (a.health_delta > 0) statDetails.push(`<span style="color: #2ecc71;">+${a.health_delta} Health</span>`);
+
+        const repoNameDisplay = a.notes ? a.notes : (a.repo_name || 'GitChi Event');
+
+        return `
                                 <div style="display: flex; align-items: center; justify-content: space-between; padding: 1rem; background: var(--surface-soft); border-radius: 12px; border: 1px solid var(--hairline);">
                                     <div style="display: flex; align-items: center; gap: 1rem;">
                                         <span style="font-size: 1.5rem;">${getEventIcon(a.event_type)}</span>
@@ -132,7 +132,7 @@ viewsRouter.get('/dashboard', async (c) => {
                                     </div>
                                 </div>
                                 `;
-                            }).join('')}
+    }).join('')}
                         </div>
                     ` : `
                         <p style="color: var(--muted); font-size: 0.9rem;">${t('dash_no_activity')}</p>
