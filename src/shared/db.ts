@@ -25,7 +25,6 @@ function mapPet(row: any): Pet {
         trait: row.trait,
         hunger: row.hunger,
         happiness: row.happiness,
-        health: row.health,
         xp: row.xp,
         streakCurrent: row.streak_current,
         streakLongest: row.streak_longest,
@@ -100,7 +99,7 @@ export class Database {
 
     async updatePetStats(petId: string, stats: Partial<Pet>): Promise<void> {
         const mapping: Record<string, string> = {
-            hunger: 'hunger', happiness: 'happiness', health: 'health', xp: 'xp',
+            hunger: 'hunger', happiness: 'happiness', xp: 'xp',
             stage: 'stage', trait: 'trait', streakCurrent: 'streak_current',
             streakLongest: 'streak_longest', isDormant: 'is_dormant',
             updatedAt: 'updated_at'
@@ -237,9 +236,9 @@ export class Database {
         await this.db.prepare(`
             INSERT INTO activity_log (
                 log_id, user_id, pet_id, event_type, github_event_id, repo_name,
-                hunger_delta, happiness_delta, health_delta, xp_delta,
+                hunger_delta, happiness_delta, xp_delta,
                 multiplier, scored_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `).bind(
             activity.logId || crypto.randomUUID(),
             activity.userId,
@@ -249,7 +248,6 @@ export class Database {
             activity.repoName,
             activity.hungerDelta,
             activity.happinessDelta,
-            activity.healthDelta,
             activity.xpDelta,
             activity.multiplier,
             activity.scoredAt

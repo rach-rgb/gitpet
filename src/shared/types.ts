@@ -25,7 +25,6 @@ export interface Pet {
     trait: PetTrait | null;
     hunger: number;
     happiness: number;
-    health: number;
     xp: number;
     streakCurrent: number;
     streakLongest: number;
@@ -51,7 +50,6 @@ export interface ActivityLog {
     repoName: string | null;
     hungerDelta: number;
     happinessDelta: number;
-    healthDelta: number;
     xpDelta: number;
     commitCount: number | null;
     linesChanged: number | null;

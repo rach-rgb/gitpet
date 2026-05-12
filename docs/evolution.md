@@ -20,15 +20,15 @@ Pets evolve based on two conditions: **XP** and **Age** (days since birth).
 
 Every GitHub event is mapped to specific stat gains.
 
-| Event Type | XP | Fullness | Happiness | Health |
-|---|---|---|---|---|
-| **PushEvent** | +10 | +15 | 0 | +5 |
-| **PullRequest (Open)** | +10 | 0 | +15 | 0 |
-| **PullRequest (Merge)** | +25 | 0 | +30 | +10 |
-| **PR Review / Comment** | +15 | 0 | +20 | 0 |
+| Event Type | XP | Fullness | Happiness |
+|---|---|---|---|
+| **PushEvent** | +10 | +15 | 0 |
+| **PullRequest (Open)** | +10 | 0 | +15 |
+| **PullRequest (Merge)** | +25 | 0 | +30 |
+| **PR Review / Comment** | +15 | 0 | +20 |
 
 - **Hunger Decay**: Fullness decreases by **10 points per day**.
-- **Status Effects**: If Fullness drops below 40, Happiness below 30, or Health below 25, the pet becomes **Hungry**, **Sad**, or **Sick**. In these states, XP gain is reduced by **50%**.
+- **Status Effects**: If Fullness drops below 40 or Happiness drops below 30, the pet becomes **Hungry** or **Sad**. In these states, XP gain is reduced by **50%**.
 
 ---
 

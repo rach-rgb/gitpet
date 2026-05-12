@@ -110,6 +110,5 @@ Copy the markdown snippet from your dashboard and paste it into your **GitHub Pr
 
 - **Fullness**: Increased by making commits.
 - **Happiness**: Increased by collaborating on PRs and reviews.
-- **Health**: Stays high if you contribute consistently without long gaps.
 
 **Happy Coding with GitChi!** 🚀

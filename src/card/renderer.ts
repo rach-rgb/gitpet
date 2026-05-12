@@ -12,18 +12,17 @@ import { traitSprites } from '../sprites';
  * Adheres to .agent/clean-code.md conventions.
  */
 export function renderPetCard(pet: Pet, dashboardUrl?: string): string {
-  const { name, hunger, happiness, health, xp, difficulty, stage, trait, isDormant } = pet;
+  const { name, hunger, happiness, xp, difficulty, stage, trait, isDormant } = pet;
   const level = Math.floor(Math.sqrt(xp / 10));
 
   const renderer = new SpriteRenderer();
 
   // 1. Determine Health State
-  let state: 'healthy' | 'hungry' | 'sad' | 'sick' | 'dormant' | 'neutral' = 'neutral';
+  let state: 'healthy' | 'hungry' | 'sad' | 'dormant' | 'neutral' = 'neutral';
   if (isDormant) state = 'dormant';
-  else if (health < 25) state = 'sick';
   else if (hunger < 40) state = 'hungry';
   else if (happiness < 30) state = 'sad';
-  else if (hunger >= 70 && happiness >= 70 && health >= 70) state = 'healthy';
+  else if (hunger >= 70 && happiness >= 70) state = 'healthy';
 
   const palette = renderer.getPaletteForState(trait, state, pet.petId, stage);
 
@@ -79,10 +78,6 @@ export function renderPetCard(pet: Pet, dashboardUrl?: string): string {
           <text y="35" class="stat-text">Happiness</text>
           <rect y="40" width="180" height="10" rx="5" fill="#333" />
           <rect y="40" width="${happiness * 1.8}" height="10" rx="5" fill="${getStatColor(happiness)}" />
-          
-          <text y="70" class="stat-text">Health</text>
-          <rect y="75" width="180" height="10" rx="5" fill="#333" />
-          <rect y="75" width="${health * 1.8}" height="10" rx="5" fill="${getStatColor(health)}" />
         </g>
         
         <text x="0" y="165" class="footer-text">GitChi • ${trait || (stage === 0 ? 'Egg' : 'Youngling')} • ${state.toUpperCase()} • ${xp} XP</text>

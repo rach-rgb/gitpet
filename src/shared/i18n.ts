@@ -50,9 +50,7 @@ export const translations = {
     guide_fullness: "포만감",
     guide_fullness_desc: "하루에 10점씩 감소합니다. 커밋을 푸시하여 먹이를 주세요.",
     guide_happiness: "행복도",
-    guide_happiness_desc: "PR을 열거나 코드 리뷰를 작성하여 높게 유지하세요.",
-    guide_health: "건강",
-    guide_health_desc: "성공적인 빌드(CI 통과)와 꾸준한 스트릭으로 관리됩니다.",
+    guide_happiness_desc: "PR 리뷰, 이슈 해결 등 협업 활동으로 오릅니다.",
     guide_xp: "경험치(XP)",
     guide_xp_desc: "시간이 지남에 따라 쌓이며 펫을 진화시키는 데 사용됩니다.",
     
@@ -128,9 +126,7 @@ export const translations = {
     guide_fullness: "Fullness",
     guide_fullness_desc: "Decreases by 10 pts per day. Feed it by pushing commits.",
     guide_happiness: "Happiness",
-    guide_happiness_desc: "Keep it high by opening PRs and giving code reviews.",
-    guide_health: "Health",
-    guide_health_desc: "Maintained by green builds (passing CI) and consistent streaks.",
+    guide_happiness_desc: "Increases through collaborative actions like PRs and reviews.",
     guide_xp: "XP",
     guide_xp_desc: "Accumulates over time to level up and evolve your pet.",
     

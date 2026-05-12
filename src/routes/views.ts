@@ -111,7 +111,6 @@ viewsRouter.get('/dashboard', async (c) => {
         if (a.xp_delta > 0) statDetails.push(`<span style="color: var(--primary);">+${a.xp_delta} XP</span>`);
         if (a.hunger_delta > 0) statDetails.push(`<span style="color: #e67e22;">+${a.hunger_delta} Food</span>`);
         if (a.happiness_delta > 0) statDetails.push(`<span style="color: #f1c40f;">+${a.happiness_delta} Happy</span>`);
-        if (a.health_delta > 0) statDetails.push(`<span style="color: #2ecc71;">+${a.health_delta} Health</span>`);
 
         const repoNameDisplay = a.notes ? a.notes : (a.repo_name || 'GitChi Event');
 
@@ -256,10 +255,6 @@ viewsRouter.get('/guide', async (c) => {
                 <div>
                     <h3 style="color: var(--ink); margin-bottom: 0.5rem;">${t('guide_happiness')}</h3>
                     <p style="font-size: 1rem; color: var(--muted);">${t('guide_happiness_desc')}</p>
-                </div>
-                <div>
-                    <h3 style="color: var(--ink); margin-bottom: 0.5rem;">${t('guide_health')}</h3>
-                    <p style="font-size: 1rem; color: var(--muted);">${t('guide_health_desc')}</p>
                 </div>
                 <div>
                     <h3 style="color: var(--ink); margin-bottom: 0.5rem;">${t('guide_xp')}</h3>

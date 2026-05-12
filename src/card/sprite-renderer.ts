@@ -82,7 +82,7 @@ export class SpriteRenderer {
     /**
      * Translates pet state to a palette transform.
      */
-    getPaletteForState(trait: string | null, state: 'healthy' | 'hungry' | 'sad' | 'sick' | 'dormant' | 'neutral', petId?: string, stage?: number): ColorPalette {
+    getPaletteForState(trait: string | null, state: 'healthy' | 'hungry' | 'sad' | 'dormant' | 'neutral', petId?: string, stage?: number): ColorPalette {
         let base = BASE_PALETTES[trait || 'lone_coder'] || BASE_PALETTES.lone_coder;
 
         // Stage 0 and 1 use random egg color variations

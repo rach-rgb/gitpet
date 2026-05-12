@@ -29,7 +29,6 @@ export async function syncAndDecay(env: { DB: D1Database; TOKEN_ENCRYPTION_KEY: 
             // 3. Process events and calculate deltas
             let hungerBonus = 0;
             let happinessBonus = 0;
-            let healthBonus = 0;
             let xpGain = 0;
 
             let soloScore = 0;
@@ -39,8 +38,8 @@ export async function syncAndDecay(env: { DB: D1Database; TOKEN_ENCRYPTION_KEY: 
 
             let xpMult = pet.difficulty === 'easy' ? 1.2 : (pet.difficulty === 'hard' ? 0.8 : 1.0);
             
-            // Apply Sick/Sad/Hungry penalty to XP gain
-            if (pet.health < 25 || pet.hunger < 40 || pet.happiness < 30) {
+            // Apply Hungry/Sad penalty to XP gain
+            if (pet.hunger < 40 || pet.happiness < 30) {
                 xpMult *= 0.5;
             }
 
@@ -59,7 +58,6 @@ export async function syncAndDecay(env: { DB: D1Database; TOKEN_ENCRYPTION_KEY: 
 
                 let eHunger = 0;
                 let eHappiness = 0;
-                let eHealth = 0;
                 let eXp = 0;
                 let soloE = 0, socialE = 0, qualityE = 0, diversityE = 0;
 
@@ -81,7 +79,6 @@ export async function syncAndDecay(env: { DB: D1Database; TOKEN_ENCRYPTION_KEY: 
                     if (hasTests) {
                         eHunger = 15;
                         eHappiness = 5;
-                        eHealth = 15;
                         eXp = 15 * xpMult;
                         qualityE = 2.0;
                     } else {
@@ -110,15 +107,13 @@ export async function syncAndDecay(env: { DB: D1Database; TOKEN_ENCRYPTION_KEY: 
                     } else if (action === 'closed' && merged) {
                         eHunger = 15;
                         eHappiness = 30;
-                        eHealth = 10;
                         eXp = 25 * xpMult;
                         socialE = 2.0;
                     }
                 } else if (event.type === 'IssueCommentEvent' || event.type === 'PullRequestReviewCommentEvent') {
-                    eHunger = 5;
-                    eHappiness = 20;
-                    eHealth = 10;
-                    eXp = 15 * xpMult;
+                        eHunger = 5;
+                        eHappiness = 20;
+                        eXp = 15 * xpMult;
                     socialE = 1.5;
                 } else if (event.type === 'IssuesEvent' && event.payload.action === 'closed') {
                     eHappiness = 15;
@@ -126,7 +121,7 @@ export async function syncAndDecay(env: { DB: D1Database; TOKEN_ENCRYPTION_KEY: 
                     diversityE = 1.5;
                 }
 
-                if (eHunger > 0 || eHappiness > 0 || eHealth > 0 || eXp > 0) {
+                if (eHunger > 0 || eHappiness > 0 || eXp > 0) {
                     await db.logActivity({
                         userId: user.user_id,
                         petId: pet.petId,
@@ -135,7 +130,6 @@ export async function syncAndDecay(env: { DB: D1Database; TOKEN_ENCRYPTION_KEY: 
                         repoName: event.repo?.name || null,
                         hungerDelta: eHunger,
                         happinessDelta: eHappiness,
-                        healthDelta: eHealth,
                         xpDelta: Math.floor(eXp),
                         multiplier: xpMult,
                         scoredAt: eventTime,
@@ -147,7 +141,6 @@ export async function syncAndDecay(env: { DB: D1Database; TOKEN_ENCRYPTION_KEY: 
 
                     hungerBonus += eHunger;
                     happinessBonus += eHappiness;
-                    healthBonus += eHealth;
                     xpGain += eXp;
                     soloScore += soloE;
                     socialScore += socialE;
@@ -158,11 +151,9 @@ export async function syncAndDecay(env: { DB: D1Database; TOKEN_ENCRYPTION_KEY: 
                 await db.markEventProcessed(event.id, user.user_id);
             }
 
-            // Diverse Repos Bonus
             if (repoNames.size >= 2) {
                 hungerBonus += 8;
                 happinessBonus += 14;
-                healthBonus += 8;
                 xpGain += 20 * xpMult;
                 diversityScore += 1.0;
             }
@@ -190,11 +181,9 @@ export async function syncAndDecay(env: { DB: D1Database; TOKEN_ENCRYPTION_KEY: 
                     // Accumulate streak score only on the first activity of a new day
                     addedStreakScore = newStreakCurrent * 0.5;
                     
-                    // 5-day streak bonus
                     if (newStreakCurrent > 0 && newStreakCurrent % 5 === 0) {
                         hungerBonus += 15;
                         happinessBonus += 15;
-                        healthBonus += 30;
                         xpGain += 30 * xpMult;
                         
                         await db.logActivity({
@@ -205,7 +194,6 @@ export async function syncAndDecay(env: { DB: D1Database; TOKEN_ENCRYPTION_KEY: 
                             repoName: null,
                             hungerDelta: 15,
                             happinessDelta: 15,
-                            healthDelta: 30,
                             xpDelta: Math.floor(30 * xpMult),
                             multiplier: xpMult,
                             scoredAt: now,
@@ -242,11 +230,9 @@ export async function syncAndDecay(env: { DB: D1Database; TOKEN_ENCRYPTION_KEY: 
             const decayMult = getDifficultyMult(pet.difficulty);
             const decay = (hoursElapsed / 24) * 10 * decayMult;
 
-            // 5. Update pet stats
             const updatedStats: Partial<Pet> = {
                 hunger: Math.max(0, Math.min(100, pet.hunger + hungerBonus - decay)),
                 happiness: Math.max(0, Math.min(100, pet.happiness + happinessBonus - decay)),
-                health: Math.max(0, Math.min(100, pet.health + healthBonus - decay)),
                 xp: pet.xp + xpGain,
                 streakCurrent: newStreakCurrent,
                 streakLongest: newStreakLongest,

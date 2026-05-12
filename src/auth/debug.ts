@@ -47,7 +47,6 @@ debugApp.post('/stats', async (c) => {
     await db.updatePetStats(pet.petId, {
         hunger: parseFloat(body.hunger as string),
         happiness: parseFloat(body.happiness as string),
-        health: parseFloat(body.health as string),
         xp: parseInt(body.xp as string),
         stage: parseInt(body.stage as string) as PetStage,
         trait: body.trait as PetTrait,
@@ -67,12 +66,12 @@ debugApp.post('/activity', async (c) => {
     const pet = await db.fetchPet(MOCK_USER_ID);
     if (!pet) return c.text('Pet not found', 404);
 
-    let hunger = 0, happiness = 0, health = 0, xp = 0;
+    let hunger = 0, happiness = 0, xp = 0;
 
-    if (type === 'PUSH') { hunger = 15; happiness = 5; health = 5; xp = 10; }
-    else if (type === 'PR_OPEN') { hunger = 10; happiness = 15; health = 0; xp = 15; }
-    else if (type === 'PR_MERGE') { hunger = 15; happiness = 30; health = 10; xp = 25; }
-    else if (type === 'REVIEW') { hunger = 5; happiness = 20; health = 10; xp = 15; }
+    if (type === 'PUSH') { hunger = 15; happiness = 5; xp = 10; }
+    else if (type === 'PR_OPEN') { hunger = 10; happiness = 15; xp = 15; }
+    else if (type === 'PR_MERGE') { hunger = 15; happiness = 30; xp = 25; }
+    else if (type === 'REVIEW') { hunger = 5; happiness = 20; xp = 15; }
 
     await db.logActivity({
         userId: MOCK_USER_ID,
@@ -82,7 +81,6 @@ debugApp.post('/activity', async (c) => {
         repoName: 'debug/repo',
         hungerDelta: hunger,
         happinessDelta: happiness,
-        healthDelta: health,
         xpDelta: xp,
         multiplier: 1.0,
         scoredAt: Math.floor(Date.now() / 1000),
@@ -95,7 +93,6 @@ debugApp.post('/activity', async (c) => {
     await db.updatePetStats(pet.petId, {
         hunger: Math.max(0, Math.min(100, pet.hunger + hunger)),
         happiness: Math.max(0, Math.min(100, pet.happiness + happiness)),
-        health: Math.max(0, Math.min(100, pet.health + health)),
         xp: pet.xp + xp
     });
 
@@ -175,10 +172,6 @@ debugApp.get('/', async (c) => {
                                 <div>
                                     <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.25rem;">Happiness (0-100)</label>
                                     <input type="number" name="happiness" value="${pet?.happiness || 100}" step="1" min="0" max="100" />
-                                </div>
-                                <div>
-                                    <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.25rem;">Health (0-100)</label>
-                                    <input type="number" name="health" value="${pet?.health || 100}" step="1" min="0" max="100" />
                                 </div>
                                 <div>
                                     <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.25rem;">XP</label>
