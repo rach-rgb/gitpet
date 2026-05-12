@@ -88,8 +88,14 @@ viewsRouter.get('/dashboard', async (c) => {
             <div style="position: absolute; top: 2rem; right: 2rem;">
                 <a href="/guide" style="color: var(--muted); font-size: 0.9rem; text-decoration: underline; font-weight: 500;">${t('nav_guide')}</a>
             </div>
-            <div style="display: flex; justify-content: center; margin-bottom: 3rem;">
-                <img src="/api/card/${user.githubUsername}?t=${Date.now()}" alt="Pet Card" style="border-radius: 14px; width: 100%; max-width: 420px; box-shadow: var(--shadow);"/>
+            <div style="display: flex; flex-direction: column; align-items: center; margin-bottom: 3rem;">
+                <img src="/api/card/${user.githubUsername}?t=${Date.now()}" alt="Pet Card" style="border-radius: 14px; width: 100%; max-width: 420px; box-shadow: var(--shadow); margin-bottom: 1rem;"/>
+                <div style="display: flex; gap: 0.5rem; align-items: center;">
+                    <span style="font-size: 0.85rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em;">${t('onboard_label_diff')}:</span>
+                    <span style="padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.85rem; font-weight: 700; background: ${pet.difficulty === 'hard' ? 'rgba(244, 67, 54, 0.1)' : pet.difficulty === 'easy' ? 'rgba(76, 175, 80, 0.1)' : 'rgba(33, 150, 243, 0.1)'}; color: ${pet.difficulty === 'hard' ? '#f44336' : pet.difficulty === 'easy' ? '#4caf50' : '#2196f3'}; border: 1px solid currentColor;">
+                        ${t('onboard_diff_' + pet.difficulty).split(' ')[0]}
+                    </span>
+                </div>
             </div>
 
                 <details open style="margin-bottom: 2rem;">
