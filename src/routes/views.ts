@@ -272,6 +272,31 @@ viewsRouter.get('/guide', async (c) => {
         </div>
 
         <div class="glass-card" style="margin-bottom: 2rem;">
+            <h2>${t('guide_diff_title')}</h2>
+            <p style="color: var(--muted); font-size: 1rem; margin-bottom: 1.5rem;">${t('guide_diff_desc')}</p>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+                <div style="padding: 1.25rem; border-radius: 12px; background: rgba(76, 175, 80, 0.05); border: 1px solid rgba(76, 175, 80, 0.2);">
+                    <div style="font-weight: 800; color: #4caf50; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
+                        <span style="font-size: 1.25rem;">🌱</span> ${t('onboard_diff_easy').split(' ')[0]}
+                    </div>
+                    <div style="font-size: 0.9rem; color: var(--muted);">${t('guide_diff_table_easy')}</div>
+                </div>
+                <div style="padding: 1.25rem; border-radius: 12px; background: rgba(33, 150, 243, 0.05); border: 1px solid rgba(33, 150, 243, 0.2);">
+                    <div style="font-weight: 800; color: #2196f3; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
+                        <span style="font-size: 1.25rem;">⚖️</span> ${t('onboard_diff_normal').split(' ')[0]}
+                    </div>
+                    <div style="font-size: 0.9rem; color: var(--muted);">${t('guide_diff_table_normal')}</div>
+                </div>
+                <div style="padding: 1.25rem; border-radius: 12px; background: rgba(244, 67, 54, 0.05); border: 1px solid rgba(244, 67, 54, 0.2);">
+                    <div style="font-weight: 800; color: #f44336; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
+                        <span style="font-size: 1.25rem;">🔥</span> ${t('onboard_diff_hard').split(' ')[0]}
+                    </div>
+                    <div style="font-size: 0.9rem; color: var(--muted);">${t('guide_diff_table_hard')}</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="glass-card" style="margin-bottom: 2rem;">
             <h2>${t('guide_table_title')}</h2>
             <p style="color: var(--muted); font-size: 1rem; margin-bottom: 1.5rem;">${t('guide_table_desc')}</p>
             <table style="width: 100%; border-collapse: collapse; font-size: 1rem;">

@@ -54,6 +54,13 @@ export const translations = {
     guide_xp: "경험치(XP)",
     guide_xp_desc: "시간이 지남에 따라 쌓이며 펫을 진화시키는 데 사용됩니다.",
     
+    // Difficulty
+    guide_diff_title: "⚙️ 난이도 시스템",
+    guide_diff_desc: "선택한 난이도에 따라 펫의 수치 감소 속도와 경험치 획득량이 달라집니다.",
+    guide_diff_table_easy: "감소율 0.5배 / XP 1.2배",
+    guide_diff_table_normal: "표준 (감소율 1배 / XP 1배)",
+    guide_diff_table_hard: "감소율 2배 / XP 0.8배",
+    
     // Interaction Table
     guide_table_title: "⚔️ 활동 매핑",
     guide_table_desc: "GitHub에서 다음 활동을 수행하여 펫의 능력치를 높이세요:",
@@ -129,6 +136,13 @@ export const translations = {
     guide_happiness_desc: "Increases through collaborative actions like PRs and reviews.",
     guide_xp: "XP",
     guide_xp_desc: "Accumulates over time to level up and evolve your pet.",
+
+    // Difficulty
+    guide_diff_title: "⚙️ Difficulty System",
+    guide_diff_desc: "Your chosen difficulty affects how fast stats decay and how much XP you earn.",
+    guide_diff_table_easy: "0.5x Decay / 1.2x XP Gain",
+    guide_diff_table_normal: "Standard (1x Decay / 1x XP)",
+    guide_diff_table_hard: "2x Decay / 0.8x XP Gain",
     
     // Interaction Table
     guide_table_title: "⚔️ Interaction Map",
