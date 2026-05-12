@@ -78,6 +78,8 @@ viewsRouter.get('/dashboard', async (c) => {
         if (t.includes('issue')) return '🎫';
         if (t === 'evolution') return '✨';
         if (t === 'streak_bonus') return '🔥';
+        if (t.includes('create')) return '🏗️';
+        if (t.includes('fork')) return '🌱';
         return '⚡';
     };
 

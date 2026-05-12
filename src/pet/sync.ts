@@ -110,11 +110,16 @@ export async function syncAndDecay(env: { DB: D1Database; TOKEN_ENCRYPTION_KEY: 
                         eXp = 25 * xpMult;
                         socialE = 2.0;
                     }
-                } else if (event.type === 'IssueCommentEvent' || event.type === 'PullRequestReviewCommentEvent') {
-                        eHunger = 5;
+                } else if (event.type === 'IssueCommentEvent' || event.type === 'PullRequestReviewCommentEvent' || event.type === 'PullRequestReviewEvent') {
+                        eHunger = 0;
                         eHappiness = 20;
                         eXp = 15 * xpMult;
                     socialE = 1.5;
+                } else if (event.type === 'CreateEvent' || event.type === 'ForkEvent') {
+                    eHunger = 5;
+                    eHappiness = 15;
+                    eXp = 10 * xpMult;
+                    diversityE = 2.0;
                 } else if (event.type === 'IssuesEvent' && event.payload.action === 'closed') {
                     eHappiness = 15;
                     eXp = 10 * xpMult;
