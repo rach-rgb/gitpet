@@ -230,10 +230,10 @@ export async function syncAndDecay(env: { DB: D1Database; TOKEN_ENCRYPTION_KEY: 
                 });
             }
 
-            // 4. Calculate decay (10 points per 24 hours)
+            // 4. Calculate decay
             const hoursElapsed = (now - user.last_sync) / 3600;
-            const decayMult = getDifficultyMult(pet.difficulty);
-            const decay = (hoursElapsed / 24) * 10 * decayMult;
+            const hourlyDecayRate = getDifficultyHourlyDecay(pet.difficulty);
+            const decay = hoursElapsed * hourlyDecayRate;
 
             const updatedStats: Partial<Pet> = {
                 hunger: Math.max(0, Math.min(100, pet.hunger + hungerBonus - decay)),
@@ -281,10 +281,15 @@ async function fetchEvents(username: string, token: string): Promise<any[]> {
     return await response.json() as any[];
 }
 
-function getDifficultyMult(difficulty: Difficulty): number {
+function getDifficultyHourlyDecay(difficulty: Difficulty): number {
+    // 사용자 요청사항 반영: 난이도 하락 (스탯 10점 감소 기준)
+    // - 쉬움: 7일(168시간)마다 스탯 감소
+    // - 보통: 3일(72시간)마다 스탯 감소
+    // - 어려움: 1일(24시간)마다 스탯 감소
     switch (difficulty) {
-        case 'easy': return 0.5;
-        case 'hard': return 2.0;
-        default: return 1.0;
+        case 'easy': return 10 / 168;
+        case 'normal': return 10 / 72;
+        case 'hard': return 10 / 24;
+        default: return 10 / 72;
     }
 }

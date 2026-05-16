@@ -39,20 +39,21 @@ export function renderPetCard(pet: Pet, dashboardUrl?: string): string {
   const spriteSvg = renderer.render(sprite, palette as any);
 
   // Stat color calculation
-  const getStatColor = (val: number) => val >= 70 ? '#4caf50' : val >= 40 ? '#ff9800' : '#f44336';
+  // Stat color calculation (세련된 비비드 라이트 테마 컬러)
+  const getStatColor = (val: number) => val >= 70 ? '#10b981' : val >= 40 ? '#f59e0b' : '#ef4444';
 
   const content = `
       <defs>
         <style>
-          .stat-text { font-family: sans-serif; font-size: 11px; fill: #aaa; }
-          .name-text { font-family: sans-serif; font-size: 22px; font-weight: bold; fill: #fff; }
-          .meta-text { font-family: sans-serif; font-size: 13px; fill: #888; }
-          .footer-text { font-family: sans-serif; font-size: 10px; fill: #444; }
-          .logo-text { font-family: system-ui, -apple-system, sans-serif; font-size: 22px; font-weight: 800; fill: #fff; letter-spacing: 0.05em; }
-          .logo-text-outline { font-family: system-ui, -apple-system, sans-serif; font-size: 22px; font-weight: 800; fill: none; stroke: #6366f1; stroke-width: 1.2; letter-spacing: 0.05em; }
+          .stat-text { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 11px; font-weight: 600; fill: #475569; }
+          .name-text { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 22px; font-weight: 800; fill: #0f172a; }
+          .meta-text { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 13px; font-weight: 600; fill: #64748b; }
+          .footer-text { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 10px; font-weight: 500; fill: #94a3b8; }
+          .logo-text { font-family: system-ui, -apple-system, sans-serif; font-size: 22px; font-weight: 800; fill: #0f172a; letter-spacing: 0.05em; }
+          .logo-text-outline { font-family: system-ui, -apple-system, sans-serif; font-size: 22px; font-weight: 800; fill: none; stroke: #6366f1; stroke-width: 1.2; letter-spacing: 0.05em; opacity: 0.9; }
         </style>
       </defs>
-      <rect width="420" height="220" rx="16" fill="#1a1a2e" />
+      <rect width="420" height="220" rx="16" fill="#ffffff" stroke="#e2e8f0" stroke-width="1.5" />
       <!-- GitChi Logo (왼쪽 상단) -->
       <g transform="translate(20, 28)">
         <text x="0" y="0" class="logo-text-outline" text-anchor="start">GitChi</text>
@@ -72,11 +73,11 @@ export function renderPetCard(pet: Pet, dashboardUrl?: string): string {
         <!-- Stats Bars -->
         <g transform="translate(0, 50)">
           <text y="0" class="stat-text">Fullness</text>
-          <rect y="5" width="180" height="10" rx="5" fill="#333" />
+          <rect y="5" width="180" height="10" rx="5" fill="#f1f5f9" />
           <rect y="5" width="${hunger * 1.8}" height="10" rx="5" fill="${getStatColor(hunger)}" />
           
           <text y="35" class="stat-text">Happiness</text>
-          <rect y="40" width="180" height="10" rx="5" fill="#333" />
+          <rect y="40" width="180" height="10" rx="5" fill="#f1f5f9" />
           <rect y="40" width="${happiness * 1.8}" height="10" rx="5" fill="${getStatColor(happiness)}" />
         </g>
         
@@ -97,8 +98,8 @@ export function renderPetCard(pet: Pet, dashboardUrl?: string): string {
 export function renderPlaceholderCard(): string {
   return `
     <svg width="400" height="160" viewBox="0 0 400 160" xmlns="http://www.w3.org/2000/svg">
-      <rect width="400" height="160" rx="10" fill="#1a1a2e" />
-      <text x="200" y="85" font-family="sans-serif" font-size="16" fill="#666" text-anchor="middle">No Pet Found</text>
+      <rect width="400" height="160" rx="10" fill="#ffffff" stroke="#e2e8f0" stroke-width="1.5" />
+      <text x="200" y="85" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="16" font-weight="600" fill="#64748b" text-anchor="middle">No Pet Found</text>
     </svg>
   `.trim();
 }
