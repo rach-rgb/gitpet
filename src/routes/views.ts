@@ -176,6 +176,29 @@ viewsRouter.get('/dashboard', async (c) => {
                 </details>
             </div>
 
+            <!-- Settings -->
+            <div class="glass-card" style="margin-bottom: 2rem; border-color: var(--hairline-soft);">
+                <h2 style="margin-bottom: 1rem; font-size: 1.25rem;">${t('dash_settings_title')}</h2>
+                <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; padding: 1.5rem; background: var(--surface-soft); border-radius: 12px; border: 1px solid var(--hairline);">
+                    <div>
+                        <div style="font-weight: 700; font-size: 1.05rem; color: var(--ink); margin-bottom: 0.25rem;">${t('dash_private_repo')}</div>
+                        <div style="font-size: 0.9rem; color: var(--muted); margin-bottom: 0.75rem;">${t('dash_private_desc')}</div>
+                        <div style="display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; font-weight: 600; padding: 0.25rem 0.75rem; border-radius: 20px; background: ${user.allowPrivateRepos ? 'rgba(16, 185, 129, 0.1)' : 'rgba(100, 116, 139, 0.1)'}; color: ${user.allowPrivateRepos ? '#10b981' : '#64748b'}; border: 1px solid currentColor;">
+                            <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: currentColor;"></span>
+                            ${user.allowPrivateRepos ? t('dash_private_status_on') : t('dash_private_status_off')}
+                        </div>
+                    </div>
+                    <div>
+                        <form action="/api/user/settings" method="POST">
+                            <input type="hidden" name="allowPrivateRepos" value="${user.allowPrivateRepos ? 'false' : 'true'}" />
+                            <button type="submit" class="btn ${user.allowPrivateRepos ? 'btn-secondary' : ''}" style="${user.allowPrivateRepos ? 'border-color: var(--hairline);' : ''}">
+                                ${user.allowPrivateRepos ? t('dash_btn_private_off') : t('dash_btn_private_on')}
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
             <!-- Actions -->
             <div class="glass-card" style="margin-bottom: 2rem; border: 1px solid rgba(244, 67, 54, 0.2);">
                 <h2 style="color: #c13515; margin-bottom: 1rem; font-size: 1.1rem;">${t('dash_danger_zone')}</h2>

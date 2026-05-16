@@ -13,6 +13,7 @@ function mapUser(row: any): User {
         createdAt: row.created_at,
         lastActive: row.last_active,
         lastSync: row.last_sync,
+        allowPrivateRepos: !!row.allow_private_repos,
     };
 }
 
@@ -47,6 +48,10 @@ export class Database {
 
     constructor(db: D1Database) {
         this.db = db;
+        // Ensure allow_private_repos column exists for existing SQLite/D1 databases
+        try {
+            this.db.prepare('ALTER TABLE users ADD COLUMN allow_private_repos INTEGER NOT NULL DEFAULT 0').run().catch(() => {});
+        } catch {}
     }
 
     async fetchUserByGithubId(githubId: number): Promise<User | null> {
@@ -62,19 +67,28 @@ export class Database {
     async upsertUser(user: any): Promise<User> {
         const now = Math.floor(Date.now() / 1000);
         const userId = user.userId || crypto.randomUUID();
+        const allowPrivate = user.allowPrivateRepos ? 1 : 0;
 
         await this.db.prepare(`
-            INSERT INTO users (user_id, github_id, github_username, token_encrypted, created_at, last_active)
-            VALUES (?, ?, ?, ?, ?, ?)
+            INSERT INTO users (user_id, github_id, github_username, token_encrypted, created_at, last_active, allow_private_repos)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(github_id) DO UPDATE SET
                 github_username = excluded.github_username,
                 token_encrypted = excluded.token_encrypted,
-                last_active = excluded.last_active
-        `).bind(userId, user.githubId, user.githubUsername, user.tokenEncrypted, now, now)
+                last_active = excluded.last_active,
+                allow_private_repos = CASE WHEN excluded.allow_private_repos = 1 THEN 1 ELSE users.allow_private_repos END
+        `).bind(userId, user.githubId, user.githubUsername, user.tokenEncrypted, now, now, allowPrivate)
             .run();
 
         return (await this.fetchUserByGithubId(user.githubId))!;
     }
+
+    async updateUserSettings(userId: string, allowPrivateRepos: boolean): Promise<void> {
+        await this.db.prepare('UPDATE users SET allow_private_repos = ? WHERE user_id = ?')
+            .bind(allowPrivateRepos ? 1 : 0, userId)
+            .run();
+    }
+
 
     async fetchPet(userId: string): Promise<Pet | null> {
         const row = await this.db.prepare('SELECT * FROM pets WHERE user_id = ?').bind(userId).first<any>();

@@ -14,9 +14,10 @@ export class GithubAuth {
     /**
      * Generates the GitHub authorization URL and a random state.
      */
-    getAuthUrl(): { url: string; state: string } {
+    getAuthUrl(allowPrivate?: boolean): { url: string; state: string } {
         const state = crypto.randomUUID();
-        const url = `https://github.com/login/oauth/authorize?client_id=${this.clientId}&state=${state}&scope=read:user`;
+        const scope = allowPrivate ? 'read:user repo' : 'read:user';
+        const url = `https://github.com/login/oauth/authorize?client_id=${this.clientId}&state=${state}&scope=${encodeURIComponent(scope)}`;
         return { url, state };
     }
 

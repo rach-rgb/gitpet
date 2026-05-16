@@ -4,7 +4,7 @@ import { syncAndDecay } from './pet/sync';
 import { Bindings } from './types';
 import { GithubAuth } from './auth/github';
 import { encryptToken, signSession } from './shared/utils';
-import { setCookie } from 'hono/cookie';
+import { setCookie, getCookie, deleteCookie } from 'hono/cookie';
 
 // Routers
 import { authRouter } from './routes/auth';
@@ -38,11 +38,15 @@ app.get('/auth/callback', async (c) => {
         const accessToken = await auth.exchangeCodeForToken(code);
         const githubUser = await auth.fetchUserData(accessToken);
 
+        const allowPrivate = getCookie(c, 'oauth_private') === 'true';
+        deleteCookie(c, 'oauth_private', { path: '/' });
+
         const encryptedToken = await encryptToken(accessToken, c.env.TOKEN_ENCRYPTION_KEY);
         const user = await db.upsertUser({
             githubId: githubUser.id,
             githubUsername: githubUser.login,
             tokenEncrypted: encryptedToken,
+            allowPrivateRepos: allowPrivate,
         });
 
         const sessionId = await signSession(user.userId, c.env.SESSION_SIGNING_KEY);

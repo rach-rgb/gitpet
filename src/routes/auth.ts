@@ -11,11 +11,20 @@ export const authRouter = new Hono<{ Bindings: Bindings }>({ strict: false });
 authRouter.use('/login', rateLimiter);
 
 authRouter.get('/login', async (c) => {
+    const allowPrivate = c.req.query('private') === 'true';
     const auth = new GithubAuth(c.env.GITHUB_CLIENT_ID, c.env.GITHUB_CLIENT_SECRET);
     const db = new Database(c.env.DB);
 
-    const { url, state } = auth.getAuthUrl();
+    const { url, state } = auth.getAuthUrl(allowPrivate);
     await db.storeOAuthState(state);
+
+    setCookie(c, 'oauth_private', allowPrivate ? 'true' : 'false', {
+        httpOnly: true,
+        secure: true,
+        sameSite: 'Lax',
+        path: '/',
+        maxAge: 600,
+    });
 
     return c.redirect(url);
 });

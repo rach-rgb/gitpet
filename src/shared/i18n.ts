@@ -82,7 +82,16 @@ export const translations = {
     stage3_name: "성체 (Adult)",
     stage3_desc: "경험치 600 XP 및 30일 경과 시 도달. 펫이 완전히 성장하여 성숙한 모습을 보여줍니다.",
     stage4_name: "장로 (Elder)",
-    stage4_desc: "경험치 1500 XP 및 90일 경과 시 도달. 최종 진화 단계이며, 은퇴가 가능해집니다."
+    stage4_desc: "경험치 1500 XP 및 90일 경과 시 도달. 최종 진화 단계이며, 은퇴가 가능해집니다.",
+    
+    // Settings
+    dash_settings_title: "설정",
+    dash_private_repo: "Private 레포지토리 트래킹",
+    dash_private_desc: "비공개 저장소의 커밋과 PR 활동을 펫 성장에 반영합니다.",
+    dash_private_status_on: "사용 중 (트래킹 활성화)",
+    dash_private_status_off: "사용 안 함 (Public 활동만 트래킹)",
+    dash_btn_private_on: "Private 트래킹 켜기 (GitHub 재인증)",
+    dash_btn_private_off: "Private 트래킹 끄기"
   },
   en: {
     // Navigation
@@ -165,7 +174,16 @@ export const translations = {
     stage3_name: "Adult",
     stage3_desc: "Reached at 600 XP and 30 days. Your pet becomes fully grown and shows its maturity.",
     stage4_name: "Elder",
-    stage4_desc: "Reached at 1500 XP and 90 days. The final evolution stage, eligible for retirement."
+    stage4_desc: "Reached at 1500 XP and 90 days. The final evolution stage, eligible for retirement.",
+    
+    // Settings
+    dash_settings_title: "Settings",
+    dash_private_repo: "Private Repository Tracking",
+    dash_private_desc: "Include commits and PRs from private repositories for pet growth.",
+    dash_private_status_on: "Active (Tracking enabled)",
+    dash_private_status_off: "Inactive (Public events only)",
+    dash_btn_private_on: "Enable Private Tracking (GitHub Re-auth)",
+    dash_btn_private_off: "Disable Private Tracking"
   }
 };
 

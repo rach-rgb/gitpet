@@ -15,6 +15,7 @@ export interface User {
     createdAt: number;
     lastActive: number;
     lastSync: number;
+    allowPrivateRepos?: boolean;
 }
 
 export interface Pet {

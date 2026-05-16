@@ -24,7 +24,7 @@ export async function syncAndDecay(env: { DB: D1Database; TOKEN_ENCRYPTION_KEY: 
             const accessToken = await decryptToken(user.token_encrypted, env.TOKEN_ENCRYPTION_KEY);
 
             // 2. Fetch events from GitHub
-            const events = await fetchEvents(user.github_username, accessToken);
+            const events = await fetchEvents(user.github_username, accessToken, !!user.allow_private_repos);
 
             // 3. Process events and calculate deltas
             let hungerBonus = 0;
@@ -264,8 +264,11 @@ export async function syncAndDecay(env: { DB: D1Database; TOKEN_ENCRYPTION_KEY: 
     }
 }
 
-async function fetchEvents(username: string, token: string): Promise<any[]> {
-    const response = await fetch(`https://api.github.com/users/${username}/events/public`, {
+async function fetchEvents(username: string, token: string, allowPrivate: boolean): Promise<any[]> {
+    const endpoint = allowPrivate
+        ? `https://api.github.com/users/${username}/events`
+        : `https://api.github.com/users/${username}/events/public`;
+    const response = await fetch(endpoint, {
         headers: {
             'Authorization': `token ${token}`,
             'User-Agent': 'Petgotchi-Sync',

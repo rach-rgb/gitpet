@@ -2,13 +2,14 @@
 
 -- Users table
 CREATE TABLE IF NOT EXISTS users (
-  user_id         TEXT    PRIMARY KEY,
-  github_id       INTEGER NOT NULL UNIQUE,
-  github_username TEXT    NOT NULL,
-  token_encrypted TEXT    NOT NULL,
-  created_at      INTEGER NOT NULL,
-  last_active     INTEGER NOT NULL,
-  last_sync       INTEGER NOT NULL DEFAULT 0
+  user_id             TEXT    PRIMARY KEY,
+  github_id           INTEGER NOT NULL UNIQUE,
+  github_username     TEXT    NOT NULL,
+  token_encrypted     TEXT    NOT NULL,
+  created_at          INTEGER NOT NULL,
+  last_active         INTEGER NOT NULL,
+  last_sync           INTEGER NOT NULL DEFAULT 0,
+  allow_private_repos INTEGER NOT NULL DEFAULT 0
 );
 
 CREATE UNIQUE INDEX IF NOT EXISTS idx_users_github_id ON users(github_id);

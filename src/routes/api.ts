@@ -29,6 +29,22 @@ apiRouter.get('/card/:username', async (c) => {
     });
 });
 
+apiRouter.post('/user/settings', async (c) => {
+    const db = new Database(c.env.DB);
+    const user = await getAuthUser(c, db);
+    if (!user) return c.redirect('/auth/login');
+
+    const { allowPrivateRepos } = await c.req.parseBody();
+    const enablePrivate = allowPrivateRepos === 'true';
+
+    if (enablePrivate) {
+        return c.redirect('/auth/login?private=true');
+    } else {
+        await db.updateUserSettings(user.userId, false);
+        return c.redirect('/dashboard');
+    }
+});
+
 apiRouter.post('/user/delete', async (c) => {
     const db = new Database(c.env.DB);
     const user = await getAuthUser(c, db);
