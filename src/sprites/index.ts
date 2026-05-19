@@ -1,14 +1,14 @@
-import craftsmanStage2 from './traits/craftsman_stage2.json';
-import craftsmanStage3 from './traits/craftsman_stage3.json';
-import craftsmanStage4 from './traits/craftsman_stage4.json';
+import beaver2 from './traits/beaver2.json';
+import beaver3 from './traits/beaver3.json';
+import beaver4 from './traits/beaver4.json';
 
-import architectStage2 from './traits/architect_stage2.json';
-import architectStage3 from './traits/architect_stage3.json';
-import architectStage4 from './traits/architect_stage4.json';
+import duck2 from './traits/duck2.json';
+import duck3 from './traits/duck3.json';
+import duck4 from './traits/duck4.json';
 
-import sprinterStage2 from './traits/sprinter_stage2.json';
-import sprinterStage3 from './traits/sprinter_stage3.json';
-import sprinterStage4 from './traits/sprinter_stage4.json';
+import fox2 from './traits/fox2.json';
+import fox3 from './traits/fox3.json';
+import fox4 from './traits/fox4.json';
 
 import owlStage2 from './traits/owl2.json';
 import owlStage3 from './traits/owl3.json';
@@ -30,18 +30,18 @@ export const traitSprites: Record<string, Record<number, any>> = {
         4: dog4,
     },
     'craftsman': {
-        2: craftsmanStage2,
-        3: craftsmanStage3,
-        4: craftsmanStage4
+        2: beaver2,
+        3: beaver3,
+        4: beaver4
     },
     'architect': {
-        2: architectStage2,
-        3: architectStage3,
-        4: architectStage4
+        2: duck2,
+        3: duck3,
+        4: duck4
     },
     'sprinter': {
-        2: sprinterStage2,
-        3: sprinterStage3,
-        4: sprinterStage4
+        2: fox2,
+        3: fox3,
+        4: fox4
     }
 };

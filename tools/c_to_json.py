@@ -120,7 +120,7 @@ def main():
     sprite_data = {
         "width": width,
         "height": height,
-        "scale": 5,
+        "scale": 4 if height > 32 else 5,
         "palette": {str(k): v for k, v in palette_keys_map.items()},
         "groups": {
             "body": []

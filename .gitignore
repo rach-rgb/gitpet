@@ -35,3 +35,5 @@ migrations/*.local.sql
 .dev.vars
 
 docs/todo.md
+assets/pixelize
+assets/concept
