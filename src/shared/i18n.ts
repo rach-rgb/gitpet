@@ -70,6 +70,9 @@ export const translations = {
     action_pr_open: "PR 생성",
     action_pr_merge: "PR 머지",
     action_review: "코드 리뷰",
+    action_create_fork: "레포/브랜치 생성 및 포크",
+    action_issue_close: "이슈 해결",
+    action_comment: "이슈/PR 코멘트 작성",
     
     // Lifecycle
     guide_life_title: "🧬 라이프사이클 및 진화",
@@ -78,11 +81,11 @@ export const translations = {
     stage1_name: "새끼 (Hatchling)",
     stage1_desc: "경험치 1 XP 달성 시 도달. 펫이 알에서 깨어나 활동을 시작합니다.",
     stage2_name: "청소년 (Fledgling)",
-    stage2_desc: "경험치 150 XP 및 10일 경과 시 도달. 이 단계에서 코딩 스타일에 따른 '특성'이 고정됩니다.",
+    stage2_desc: "경험치 100 XP 및 1일 경과 시 도달. 이 단계에서 코딩 스타일에 따른 '특성'이 고정됩니다.",
     stage3_name: "성체 (Adult)",
-    stage3_desc: "경험치 600 XP 및 30일 경과 시 도달. 펫이 완전히 성장하여 성숙한 모습을 보여줍니다.",
+    stage3_desc: "경험치 300 XP 및 3일 경과 시 도달. 펫이 완전히 성장하여 성숙한 모습을 보여줍니다.",
     stage4_name: "장로 (Elder)",
-    stage4_desc: "경험치 1500 XP 및 90일 경과 시 도달. 최종 진화 단계이며, 은퇴가 가능해집니다.",
+    stage4_desc: "경험치 500 XP 및 5일 경과 시 도달. 최종 진화 단계이며, 은퇴가 가능해집니다.",
     
     // Settings
     dash_settings_title: "설정",
@@ -162,6 +165,9 @@ export const translations = {
     action_pr_open: "PR Opened",
     action_pr_merge: "PR Merged",
     action_review: "Code Review",
+    action_create_fork: "Create / Fork Repo",
+    action_issue_close: "Issue Closed",
+    action_comment: "Issue / PR Comment",
     
     // Lifecycle
     guide_life_title: "🧬 Lifecycle & Evolution",
@@ -170,11 +176,11 @@ export const translations = {
     stage1_name: "Hatchling",
     stage1_desc: "Reached at 1 XP. The pet hatches and starts its journey.",
     stage2_name: "Fledgling",
-    stage2_desc: "Reached at 150 XP and 10 days. This is where your coding personality (Trait) is locked.",
+    stage2_desc: "Reached at 100 XP and 1 day. This is where your coding personality (Trait) is locked.",
     stage3_name: "Adult",
-    stage3_desc: "Reached at 600 XP and 30 days. Your pet becomes fully grown and shows its maturity.",
+    stage3_desc: "Reached at 300 XP and 3 days. Your pet becomes fully grown and shows its maturity.",
     stage4_name: "Elder",
-    stage4_desc: "Reached at 1500 XP and 90 days. The final evolution stage, eligible for retirement.",
+    stage4_desc: "Reached at 500 XP and 5 days. The final evolution stage, eligible for retirement.",
     
     // Settings
     dash_settings_title: "Settings",

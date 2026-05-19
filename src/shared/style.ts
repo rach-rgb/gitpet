@@ -187,6 +187,55 @@ footer {
   flex-shrink: 0; 
   font-size: 0.9rem;
 }
+
+/* Mobile Responsive Optimization */
+@media (max-width: 768px) {
+  header {
+    padding: 1rem;
+    height: auto;
+    flex-direction: column;
+    gap: 1rem;
+  }
+  nav {
+    gap: 1rem;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  main {
+    padding: 2rem 1rem;
+  }
+  .glass-card {
+    padding: 1.25rem !important;
+  }
+  h1 { font-size: 1.5rem; }
+  h2 { font-size: 1.2rem; }
+  
+  [style*="grid-template-columns"] {
+    grid-template-columns: 1fr !important;
+    gap: 1rem !important;
+  }
+  
+  [style*="display: flex"] {
+    flex-wrap: wrap;
+  }
+  
+  table {
+    display: block;
+    width: 100%;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+  th, td {
+    padding: 0.75rem 0.5rem !important;
+    font-size: 0.9rem;
+  }
+  
+  .code-snippet {
+    padding: 0.75rem;
+    font-size: 0.8rem;
+    word-break: break-word;
+  }
+}
 `;
 
 export function renderLayout(title: string, content: string, user?: { username: string }, locale: Locale = 'ko'): string {

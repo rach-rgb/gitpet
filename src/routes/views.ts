@@ -346,6 +346,18 @@ viewsRouter.get('/guide', async (c) => {
                         <td style="padding: 1rem;">${t('action_review')}</td>
                         <td style="padding: 1rem; color: var(--primary); font-weight: 600;">+20 ${t('guide_happiness')}, +15 XP</td>
                     </tr>
+                    <tr style="border-bottom: 1px solid var(--hairline);">
+                        <td style="padding: 1rem;">${t('action_create_fork')}</td>
+                        <td style="padding: 1rem; color: var(--primary); font-weight: 600;">+5 ${t('guide_fullness')}, +15 ${t('guide_happiness')}, +10 XP</td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid var(--hairline);">
+                        <td style="padding: 1rem;">${t('action_issue_close')}</td>
+                        <td style="padding: 1rem; color: var(--primary); font-weight: 600;">+15 ${t('guide_happiness')}, +10 XP</td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid var(--hairline);">
+                        <td style="padding: 1rem;">${t('action_comment')}</td>
+                        <td style="padding: 1rem; color: var(--primary); font-weight: 600;">+20 ${t('guide_happiness')}, +15 XP</td>
+                    </tr>
                 </tbody>
             </table>
         </div>

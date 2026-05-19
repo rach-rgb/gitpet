@@ -8,9 +8,9 @@ import { Database } from '../shared/db';
 
 const EVOLUTION_THRESHOLDS: Record<number, { days: number, xp: number }> = {
     0: { days: 0, xp: 1 },      // Egg to Hatchling (First commit)
-    1: { days: 10, xp: 150 },   // Hatchling to Fledgling (Trait Lock point)
-    2: { days: 30, xp: 600 },   // Fledgling to Adult
-    3: { days: 90, xp: 1500 },  // Adult to Elder (Final Stage)
+    1: { days: 1, xp: 100 },    // Hatchling to Fledgling (Trait Lock point)
+    2: { days: 3, xp: 300 },    // Fledgling to Adult
+    3: { days: 5, xp: 500 },    // Adult to Elder (Final Stage)
 };
 
 /**
