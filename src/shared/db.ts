@@ -108,6 +108,15 @@ export class Database {
             VALUES (?, ?, ?, ?, ?, ?, ?)
         `).bind(petId, pet.userId, pet.name, pet.difficulty, now, now, now)
             .run();
+
+        await this.db.prepare(`
+            INSERT OR IGNORE INTO trait_tally (
+                user_id, solo_commit_score, social_score, quality_score,
+                diversity_score, streak_score, tracking_until, is_locked
+            ) VALUES (?, 0, 0, 0, 0, 0, ?, 0)
+        `).bind(pet.userId, now + 90 * 86400)
+            .run();
+
         return (await this.fetchPetById(petId))!;
     }
 
@@ -116,6 +125,10 @@ export class Database {
             hunger: 'hunger', happiness: 'happiness', xp: 'xp',
             stage: 'stage', trait: 'trait', streakCurrent: 'streak_current',
             streakLongest: 'streak_longest', isDormant: 'is_dormant',
+            streakLastDate: 'streak_last_date', dormantSince: 'dormant_since',
+            legendaryAchieved: 'legendary_achieved',
+            legendaryAchievedAt: 'legendary_achieved_at',
+            hatchedAt: 'hatched_at', traitLockedAt: 'trait_locked_at',
             updatedAt: 'updated_at'
         };
 
@@ -123,7 +136,7 @@ export class Database {
         if (entries.length === 0) return;
 
         const sets = entries.map(([k]) => `${mapping[k]} = ?`).join(', ');
-        const values = entries.map(([, v]) => v);
+        const values = entries.map(([, v]) => typeof v === 'boolean' ? (v ? 1 : 0) : v);
 
         await this.db.prepare(`UPDATE pets SET ${sets}, updated_at = ? WHERE pet_id = ?`)
             .bind(...values, Math.floor(Date.now() / 1000), petId)
@@ -168,14 +181,35 @@ export class Database {
             qualityScore: 'quality_score',
             diversityScore: 'diversity_score',
             streakScore: 'streak_score',
+            trackingUntil: 'tracking_until',
             isLocked: 'is_locked'
         };
         const entries = Object.entries(updates).filter(([k]) => mapping[k]);
         if (entries.length === 0) return;
-        const sets = entries.map(([k]) => `${mapping[k]} = ?`).join(', ');
-        const values = entries.map(([, v]) => v);
-        await this.db.prepare(`UPDATE trait_tally SET ${sets} WHERE user_id = ?`)
-            .bind(...values, userId)
+
+        const now = Math.floor(Date.now() / 1000);
+        const valuesByColumn = new Map(
+            entries.map(([k, v]) => [mapping[k], typeof v === 'boolean' ? (v ? 1 : 0) : v])
+        );
+        const updateSets = entries.map(([k]) => `${mapping[k]} = excluded.${mapping[k]}`).join(', ');
+
+        await this.db.prepare(`
+            INSERT INTO trait_tally (
+                user_id, solo_commit_score, social_score, quality_score,
+                diversity_score, streak_score, tracking_until, is_locked
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(user_id) DO UPDATE SET ${updateSets}
+        `)
+            .bind(
+                userId,
+                valuesByColumn.get('solo_commit_score') ?? 0,
+                valuesByColumn.get('social_score') ?? 0,
+                valuesByColumn.get('quality_score') ?? 0,
+                valuesByColumn.get('diversity_score') ?? 0,
+                valuesByColumn.get('streak_score') ?? 0,
+                valuesByColumn.get('tracking_until') ?? now + 90 * 86400,
+                valuesByColumn.get('is_locked') ?? 0
+            )
             .run();
     }
 

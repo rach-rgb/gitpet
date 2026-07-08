@@ -343,7 +343,7 @@ viewsRouter.get('/guide', async (c) => {
                 <tbody>
                     <tr style="border-bottom: 1px solid var(--hairline);">
                         <td style="padding: 1rem;">${t('action_push')}</td>
-                        <td style="padding: 1rem; color: var(--primary); font-weight: 600;">+15 ${t('guide_fullness')}, +10 XP</td>
+                        <td style="padding: 1rem; color: var(--primary); font-weight: 600;">+15 ${t('guide_fullness')}, +10 ${t('guide_happiness')}, +10 XP</td>
                     </tr>
                     <tr style="border-bottom: 1px solid var(--hairline);">
                         <td style="padding: 1rem;">${t('action_pr_open')}</td>

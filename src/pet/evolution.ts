@@ -1,4 +1,4 @@
-import { Pet, PetStage, PetTrait } from '../shared/types';
+import { Difficulty, Pet, PetStage, PetTrait } from '../shared/types';
 import { Database } from '../shared/db';
 
 /**
@@ -6,11 +6,25 @@ import { Database } from '../shared/db';
  * Adheres to .agent/clean-code.md conventions.
  */
 
-const EVOLUTION_THRESHOLDS: Record<number, { days: number, xp: number }> = {
-    0: { days: 0, xp: 1 },      // Egg to Hatchling (First commit)
-    1: { days: 1, xp: 100 },    // Hatchling to Fledgling (Trait Lock point)
-    2: { days: 3, xp: 300 },    // Fledgling to Adult
-    3: { days: 5, xp: 500 },    // Adult to Elder (Final Stage)
+const EVOLUTION_THRESHOLDS: Record<Difficulty, Record<number, { days: number, xp: number }>> = {
+    easy: {
+        0: { days: 0, xp: 1 },
+        1: { days: 7, xp: 120 },
+        2: { days: 18, xp: 300 },
+        3: { days: 30, xp: 500 },
+    },
+    normal: {
+        0: { days: 0, xp: 1 },
+        1: { days: 14, xp: 220 },
+        2: { days: 36, xp: 600 },
+        3: { days: 60, xp: 1000 },
+    },
+    hard: {
+        0: { days: 0, xp: 1 },
+        1: { days: 21, xp: 320 },
+        2: { days: 54, xp: 900 },
+        3: { days: 90, xp: 1500 },
+    },
 };
 
 /**
@@ -21,7 +35,7 @@ export async function checkEvolution(db: Database, pet: Pet): Promise<void> {
     const daysSinceBirth = (now - pet.bornAt) / 86400;
 
     const nextStage = (pet.stage + 1) as PetStage;
-    const threshold = EVOLUTION_THRESHOLDS[pet.stage];
+    const threshold = EVOLUTION_THRESHOLDS[pet.difficulty]?.[pet.stage];
 
     if (!threshold || nextStage > 4) return;
 
@@ -86,14 +100,12 @@ export async function checkEvolution(db: Database, pet: Pet): Promise<void> {
 
 /**
  * Determines the pet's trait based on the TraitTally scores.
- * Priority: craftsman > collaborator > lone_coder > architect > sprinter
+ * Ties are resolved deterministically per user to avoid a fixed trait bias.
  */
 async function determineTrait(db: Database, userId: string): Promise<PetTrait> {
     const tally = await db.fetchTraitTally(userId);
     if (!tally) return 'lone_coder';
 
-    // We use an ordered array to enforce priority in case of ties
-    // craftsman (quality) > collaborator (social) > lone_coder (solo) > architect (diversity) > sprinter (streak)
     const candidates = [
         { trait: 'craftsman' as PetTrait, score: tally.qualityScore || 0 },
         { trait: 'collaborator' as PetTrait, score: tally.socialScore || 0 },
@@ -102,13 +114,16 @@ async function determineTrait(db: Database, userId: string): Promise<PetTrait> {
         { trait: 'sprinter' as PetTrait, score: tally.streakScore || 0 },
     ];
 
-    // Find the highest score. If tied, the first one in the list wins (priority).
-    let best = candidates[0];
-    for (let i = 1; i < candidates.length; i++) {
-        if (candidates[i].score > best.score) {
-            best = candidates[i];
-        }
+    const highestScore = Math.max(...candidates.map((candidate) => candidate.score));
+    if (highestScore <= 0) return 'lone_coder';
+
+    const tiedCandidates = candidates.filter((candidate) => candidate.score === highestScore);
+    if (tiedCandidates.length === 1) return tiedCandidates[0].trait;
+
+    let hash = 0;
+    for (let i = 0; i < userId.length; i++) {
+        hash = userId.charCodeAt(i) + ((hash << 5) - hash);
     }
 
-    return best.trait;
+    return tiedCandidates[Math.abs(hash) % tiedCandidates.length].trait;
 }

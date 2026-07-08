@@ -78,12 +78,12 @@ export async function syncAndDecay(env: { DB: D1Database; TOKEN_ENCRYPTION_KEY: 
 
                     if (hasTests) {
                         eHunger = 15;
-                        eHappiness = 5;
+                        eHappiness = 10;
                         eXp = 15 * xpMult;
                         qualityE = 2.0;
                     } else {
                         eHunger = 15;
-                        eHappiness = 5;
+                        eHappiness = 10;
                         eXp = 10 * xpMult;
                         soloE = 1.0;
                     }
@@ -220,13 +220,13 @@ export async function syncAndDecay(env: { DB: D1Database; TOKEN_ENCRYPTION_KEY: 
 
             // Save trait scores
             const currentTally = await db.fetchTraitTally(user.user_id);
-            if (currentTally && !currentTally.isLocked) {
+            if (!currentTally || !currentTally.isLocked) {
                 await db.upsertTraitTally(user.user_id, {
-                    soloCommitScore: (currentTally.soloCommitScore || 0) + soloScore,
-                    socialScore: (currentTally.socialScore || 0) + socialScore,
-                    qualityScore: (currentTally.qualityScore || 0) + qualityScore,
-                    diversityScore: (currentTally.diversityScore || 0) + diversityScore,
-                    streakScore: (currentTally.streakScore || 0) + addedStreakScore
+                    soloCommitScore: (currentTally?.soloCommitScore || 0) + soloScore,
+                    socialScore: (currentTally?.socialScore || 0) + socialScore,
+                    qualityScore: (currentTally?.qualityScore || 0) + qualityScore,
+                    diversityScore: (currentTally?.diversityScore || 0) + diversityScore,
+                    streakScore: (currentTally?.streakScore || 0) + addedStreakScore
                 });
             }
 
@@ -235,14 +235,27 @@ export async function syncAndDecay(env: { DB: D1Database; TOKEN_ENCRYPTION_KEY: 
             const hourlyDecayRate = getDifficultyHourlyDecay(pet.difficulty);
             const decay = hoursElapsed * hourlyDecayRate;
 
+            const updatedHunger = Math.max(0, Math.min(100, pet.hunger + hungerBonus - decay));
+            const updatedHappiness = Math.max(0, Math.min(100, pet.happiness + happinessBonus - decay));
+            const shouldWake = xpGain > 0 && pet.isDormant;
+            const shouldSleep = xpGain === 0 && updatedHunger <= 0 && updatedHappiness <= 0 && !pet.isDormant;
+
             const updatedStats: Partial<Pet> = {
-                hunger: Math.max(0, Math.min(100, pet.hunger + hungerBonus - decay)),
-                happiness: Math.max(0, Math.min(100, pet.happiness + happinessBonus - decay)),
+                hunger: updatedHunger,
+                happiness: updatedHappiness,
                 xp: pet.xp + xpGain,
                 streakCurrent: newStreakCurrent,
                 streakLongest: newStreakLongest,
                 streakLastDate: newStreakLastDate
             };
+
+            if (shouldWake) {
+                updatedStats.isDormant = false;
+                updatedStats.dormantSince = null;
+            } else if (shouldSleep) {
+                updatedStats.isDormant = true;
+                updatedStats.dormantSince = now;
+            }
 
             await db.updatePetStats(pet.petId, updatedStats);
 
@@ -285,6 +298,8 @@ async function fetchEvents(username: string, token: string, allowPrivate: boolea
 }
 
 function getDifficultyHourlyDecay(difficulty: Difficulty): number {
+    // Difficulty controls maintenance pressure; evolution thresholds control total growth time.
+    // Current decay: easy 10 points / 7 days, normal 10 / 3 days, hard 10 / 2 days.
     // 사용자 요청사항 반영: 난이도 하락 (스탯 10점 감소 기준)
     // - 쉬움: 7일(168시간)마다 스탯 감소
     // - 보통: 3일(72시간)마다 스탯 감소
@@ -292,7 +307,7 @@ function getDifficultyHourlyDecay(difficulty: Difficulty): number {
     switch (difficulty) {
         case 'easy': return 10 / 168;
         case 'normal': return 10 / 72;
-        case 'hard': return 10 / 24;
+        case 'hard': return 10 / 48;
         default: return 10 / 72;
     }
 }
