@@ -5,10 +5,12 @@ import { encryptToken, signSession } from '../shared/utils';
 import { setCookie, getCookie, deleteCookie } from 'hono/cookie';
 import { rateLimiter } from '../middleware/rateLimit';
 import { Bindings } from '../types';
+import { requireSameOrigin } from '../shared/security';
 
 export const authRouter = new Hono<{ Bindings: Bindings }>({ strict: false });
 
 authRouter.use('/login', rateLimiter);
+authRouter.use('/logout', requireSameOrigin);
 
 authRouter.get('/login', async (c) => {
     const allowPrivate = c.req.query('private') === 'true';
@@ -29,7 +31,7 @@ authRouter.get('/login', async (c) => {
     return c.redirect(url);
 });
 
-authRouter.get('/logout', async (c) => {
+authRouter.post('/logout', async (c) => {
     const sessionCookie = getCookie(c, 'session');
     if (sessionCookie) {
         const db = new Database(c.env.DB);

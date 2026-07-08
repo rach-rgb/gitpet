@@ -1,6 +1,7 @@
 import { Pet, PetStage } from '../shared/types';
 import { SpriteRenderer } from './sprite-renderer';
 import { PixelMap } from '../shared/pixel-map';
+import { escapeHtml } from '../shared/security';
 
 // Sprite Imports
 import eggSprite from '../sprites/shared/egg.json';
@@ -14,15 +15,22 @@ import { traitSprites } from '../sprites';
 export function renderPetCard(pet: Pet, dashboardUrl?: string): string {
   const { name, hunger, happiness, xp, difficulty, stage, trait, isDormant } = pet;
   const level = Math.floor(Math.sqrt(xp / 10));
+  const safeName = escapeHtml(name);
+  const safeDifficulty = escapeHtml(String(difficulty).toUpperCase());
+  const safeTrait = escapeHtml(trait || (stage === 0 ? 'Egg' : 'Youngling'));
+  const safeDashboardUrl = dashboardUrl ? escapeHtml(dashboardUrl) : undefined;
+  const safeHunger = Math.max(0, Math.min(100, Number(hunger) || 0));
+  const safeHappiness = Math.max(0, Math.min(100, Number(happiness) || 0));
+  const safeXp = Math.max(0, Number(xp) || 0);
 
   const renderer = new SpriteRenderer();
 
   // 1. Determine Health State
   let state: 'healthy' | 'hungry' | 'sad' | 'dormant' | 'neutral' = 'neutral';
   if (isDormant) state = 'dormant';
-  else if (hunger < 40) state = 'hungry';
-  else if (happiness < 30) state = 'sad';
-  else if (hunger >= 70 && happiness >= 70) state = 'healthy';
+  else if (safeHunger < 40) state = 'hungry';
+  else if (safeHappiness < 30) state = 'sad';
+  else if (safeHunger >= 70 && safeHappiness >= 70) state = 'healthy';
 
   const palette = renderer.getPaletteForState(trait, state, pet.petId, stage);
 
@@ -67,27 +75,27 @@ export function renderPetCard(pet: Pet, dashboardUrl?: string): string {
       
       <!-- Content Area (40% weight) -->
       <g transform="translate(200, 44)">
-        <text x="0" y="0" class="name-text">${name}</text>
-        <text x="0" y="25" class="meta-text">Lv.${level} / ${difficulty.toUpperCase()}</text>
+        <text x="0" y="0" class="name-text">${safeName}</text>
+        <text x="0" y="25" class="meta-text">Lv.${level} / ${safeDifficulty}</text>
         
         <!-- Stats Bars -->
         <g transform="translate(0, 50)">
           <text y="0" class="stat-text">Fullness</text>
           <rect y="5" width="180" height="10" rx="5" fill="#f1f5f9" />
-          <rect y="5" width="${hunger * 1.8}" height="10" rx="5" fill="${getStatColor(hunger)}" />
+          <rect y="5" width="${safeHunger * 1.8}" height="10" rx="5" fill="${getStatColor(safeHunger)}" />
           
           <text y="35" class="stat-text">Happiness</text>
           <rect y="40" width="180" height="10" rx="5" fill="#f1f5f9" />
-          <rect y="40" width="${happiness * 1.8}" height="10" rx="5" fill="${getStatColor(happiness)}" />
+          <rect y="40" width="${safeHappiness * 1.8}" height="10" rx="5" fill="${getStatColor(safeHappiness)}" />
         </g>
         
-        <text x="0" y="165" class="footer-text">GitChi • ${trait || (stage === 0 ? 'Egg' : 'Youngling')} • ${state.toUpperCase()} • ${xp} XP</text>
+        <text x="0" y="165" class="footer-text">GitChi • ${safeTrait} • ${state.toUpperCase()} • ${safeXp} XP</text>
       </g>
   `;
 
   return `
     <svg width="420" height="220" viewBox="0 0 420 220" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
-      ${dashboardUrl ? `<a xlink:href="${dashboardUrl}" target="_blank">${content}</a>` : content}
+      ${safeDashboardUrl ? `<a xlink:href="${safeDashboardUrl}" target="_blank">${content}</a>` : content}
     </svg>
   `.trim();
 }

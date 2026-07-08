@@ -1,4 +1,5 @@
 import { Locale, getT } from './i18n';
+import { escapeHtml, getSafeLocale } from './security';
 
 export const SHARED_STYLE = `
 :root {
@@ -239,15 +240,16 @@ footer {
 `;
 
 export function renderLayout(title: string, content: string, user?: { username: string }, locale: Locale = 'ko'): string {
-  const t = getT(locale);
+  const safeLocale = getSafeLocale(locale);
+  const t = getT(safeLocale);
   
   return `
 <!DOCTYPE html>
-<html lang="${locale}">
+<html lang="${safeLocale}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>${title} | GitChi</title>
+    <title>${escapeHtml(title)} | GitChi</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -261,11 +263,13 @@ export function renderLayout(title: string, content: string, user?: { username: 
                 <a href="/dashboard">${t('nav_dashboard')}</a>
             ` : ''}
             <a href="/guide">${t('nav_guide')}</a>
-            <a href="/api/locale?lang=${locale === 'ko' ? 'en' : 'ko'}" class="btn btn-secondary" style="padding: 0.4rem 0.8rem; font-size: 0.9rem;">
-                ${locale === 'ko' ? '🌐 English' : '🌐 한국어'}
+            <a href="/api/locale?lang=${safeLocale === 'ko' ? 'en' : 'ko'}" class="btn btn-secondary" style="padding: 0.4rem 0.8rem; font-size: 0.9rem;">
+                ${safeLocale === 'ko' ? '🌐 English' : '🌐 한국어'}
             </a>
             ${user ? `
-                <a href="/auth/logout" class="btn btn-secondary" style="padding: 0.4rem 0.8rem; font-size: 0.9rem;">${t('nav_logout')}</a>
+                <form action="/auth/logout" method="POST" style="display: inline;">
+                    <button type="submit" class="btn btn-secondary" style="padding: 0.4rem 0.8rem; font-size: 0.9rem;">${t('nav_logout')}</button>
+                </form>
             ` : `
                 <a href="/auth/login" class="btn">${t('nav_login')}</a>
             `}

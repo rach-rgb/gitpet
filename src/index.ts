@@ -11,8 +11,11 @@ import { authRouter } from './routes/auth';
 import { apiRouter } from './routes/api';
 import { viewsRouter } from './routes/views';
 import { debugApp } from './auth/debug';
+import { securityHeaders } from './shared/security';
 
 const app = new Hono<{ Bindings: Bindings }>({ strict: false });
+
+app.use('*', securityHeaders);
 
 // Security middleware for debug routes
 app.use('/debug/*', async (c, next) => {

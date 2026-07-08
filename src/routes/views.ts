@@ -4,6 +4,7 @@ import { getAuthUser } from '../middleware/auth';
 import { renderLayout } from '../shared/style';
 import { Bindings } from '../types';
 import { Locale, getT } from '../shared/i18n';
+import { encodePathSegment, escapeHtml, getSafeLocale } from '../shared/security';
 
 import { getCookie } from 'hono/cookie';
 
@@ -18,7 +19,7 @@ const getLocale = (c: any): Locale => {
     // 2. Check header
     const lang = c.req.header('Accept-Language');
     if (lang && lang.toLowerCase().startsWith('ko')) return 'ko';
-    return 'en';
+    return getSafeLocale('en');
 };
 
 viewsRouter.get('/', async (c) => {
@@ -65,6 +66,14 @@ viewsRouter.get('/dashboard', async (c) => {
 
     const pet = await db.fetchPet(user.userId);
     if (!pet) return c.redirect('/onboarding');
+    const safeUsername = escapeHtml(user.githubUsername);
+    const usernamePath = encodePathSegment(user.githubUsername);
+    const origin = new URL(c.req.url).origin;
+    const difficultyLabel = {
+        easy: t('onboard_diff_easy'),
+        normal: t('onboard_diff_normal'),
+        hard: t('onboard_diff_hard'),
+    }[pet.difficulty];
 
     const now = Math.floor(Date.now() / 1000);
     const sevenDaysAgo = now - 7 * 24 * 60 * 60;
@@ -89,11 +98,11 @@ viewsRouter.get('/dashboard', async (c) => {
                 <a href="/guide" style="color: var(--muted); font-size: 0.9rem; text-decoration: underline; font-weight: 500;">${t('nav_guide')}</a>
             </div>
             <div style="display: flex; flex-direction: column; align-items: center; margin-bottom: 3rem;">
-                <img src="/api/card/${user.githubUsername}?t=${Date.now()}" alt="Pet Card" style="border-radius: 14px; width: 100%; max-width: 420px; box-shadow: var(--shadow); margin-bottom: 1rem;"/>
+                <img src="/api/card/${usernamePath}?t=${Date.now()}" alt="Pet Card" style="border-radius: 14px; width: 100%; max-width: 420px; box-shadow: var(--shadow); margin-bottom: 1rem;"/>
                 <div style="display: flex; gap: 0.5rem; align-items: center;">
                     <span style="font-size: 0.85rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em;">${t('onboard_label_diff')}:</span>
                     <span style="padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.85rem; font-weight: 700; background: ${pet.difficulty === 'hard' ? 'rgba(244, 67, 54, 0.1)' : pet.difficulty === 'easy' ? 'rgba(76, 175, 80, 0.1)' : 'rgba(33, 150, 243, 0.1)'}; color: ${pet.difficulty === 'hard' ? '#f44336' : pet.difficulty === 'easy' ? '#4caf50' : '#2196f3'}; border: 1px solid currentColor;">
-                        ${t('onboard_diff_' + pet.difficulty).split(' ')[0]}
+                        ${difficultyLabel.split(' ')[0]}
                     </span>
                 </div>
             </div>
@@ -120,14 +129,16 @@ viewsRouter.get('/dashboard', async (c) => {
         if (a.hunger_delta > 0) statDetails.push(`<span style="color: #e67e22;">+${a.hunger_delta} Food</span>`);
         if (a.happiness_delta > 0) statDetails.push(`<span style="color: #f1c40f;">+${a.happiness_delta} Happy</span>`);
 
-        const repoNameDisplay = a.notes ? a.notes : (a.repo_name || 'GitChi Event');
+        const repoNameDisplay = escapeHtml(a.notes ? a.notes : (a.repo_name || 'GitChi Event'));
+        const safeEventName = escapeHtml(eventName);
+        const safeTimeStr = escapeHtml(timeStr);
 
         return `
                                 <div style="display: flex; align-items: center; justify-content: space-between; padding: 1rem; background: var(--surface-soft); border-radius: 12px; border: 1px solid var(--hairline);">
                                     <div style="display: flex; align-items: center; gap: 1rem;">
                                         <span style="font-size: 1.5rem;">${getEventIcon(a.event_type)}</span>
                                         <div>
-                                            <div style="font-weight: 600; font-size: 1rem; color: var(--ink); text-transform: capitalize;">${eventName}</div>
+                                            <div style="font-weight: 600; font-size: 1rem; color: var(--ink); text-transform: capitalize;">${safeEventName}</div>
                                             <div style="font-size: 0.85rem; color: var(--muted);">${repoNameDisplay}</div>
                                         </div>
                                     </div>
@@ -135,7 +146,7 @@ viewsRouter.get('/dashboard', async (c) => {
                                         <div style="font-weight: 700; font-size: 0.9rem; display: flex; gap: 0.5rem; justify-content: flex-end;">
                                             ${statDetails.length > 0 ? statDetails.join(' ') : '<span style="color: var(--muted);">Event</span>'}
                                         </div>
-                                        <div style="font-size: 0.8rem; color: var(--muted);">${timeStr}</div>
+                                        <div style="font-size: 0.8rem; color: var(--muted);">${safeTimeStr}</div>
                                     </div>
                                 </div>
                                 `;
@@ -151,7 +162,7 @@ viewsRouter.get('/dashboard', async (c) => {
                 </h3>
                 <p style="color: var(--muted); font-size: 0.9rem; margin-bottom: 0.5rem;">${t('dash_share_desc')}</p>
                 <div class="code-snippet" id="snippet" onclick="copySnippet()">
-                    [![GitChi](${new URL(c.req.url).origin}/api/card/${user.githubUsername})](${new URL(c.req.url).origin}/dashboard)
+                    [![GitChi](${origin}/api/card/${usernamePath})](${origin}/dashboard)
                 </div>
                 <p id="copy-msg" style="color: var(--primary); font-size: 0.8rem; height: 1rem; opacity: 0; transition: opacity 0.2s; margin-bottom: 1rem;">${t('dash_copied')}</p>
 
@@ -214,7 +225,7 @@ viewsRouter.get('/dashboard', async (c) => {
                         <button type="submit" class="btn" style="background: #c13515; color: #fff;">${t('dash_btn_delete')}</button>
                     </form>
                     ${pet.stage === 4 ? `
-                    <form action="/api/pet/retire?petId=${pet.petId}" method="POST" onsubmit="return confirm('Really retire?')">
+                    <form action="/api/pet/retire?petId=${encodePathSegment(pet.petId)}" method="POST" onsubmit="return confirm('Really retire?')">
                         <button type="submit" class="btn btn-secondary">${t('dash_btn_retire')}</button>
                     </form>
                     ` : ''}
@@ -232,7 +243,7 @@ viewsRouter.get('/dashboard', async (c) => {
                 });
             }
         </script>
-    `, { username: user.githubUsername }, locale));
+    `, { username: safeUsername }, locale));
 });
 
 viewsRouter.get('/onboarding', async (c) => {

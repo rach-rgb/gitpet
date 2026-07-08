@@ -73,7 +73,6 @@ export async function checkEvolution(db: Database, pet: Pet): Promise<void> {
             repoName: null,
             hungerDelta: 0,
             happinessDelta: 0,
-            healthDelta: 0,
             xpDelta: 0,
             multiplier: 1.0,
             scoredAt: now,

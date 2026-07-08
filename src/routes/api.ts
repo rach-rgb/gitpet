@@ -4,8 +4,18 @@ import { getAuthUser } from '../middleware/auth';
 import { renderPetCard, renderPlaceholderCard } from '../card/renderer';
 import { deleteCookie } from 'hono/cookie';
 import { Bindings } from '../types';
+import {
+    getSafeDifficulty,
+    getSafeLocale,
+    requireSameOrigin,
+    safeRedirectPath,
+    sanitizePetName,
+    setLocaleCookie,
+} from '../shared/security';
 
 export const apiRouter = new Hono<{ Bindings: Bindings }>({ strict: false });
+
+apiRouter.use('*', requireSameOrigin);
 
 apiRouter.get('/card/:username', async (c) => {
     const username = c.req.param('username');
@@ -25,6 +35,7 @@ apiRouter.get('/card/:username', async (c) => {
 
     return c.body(renderPetCard(pet, dashboardUrl), 200, {
         'Content-Type': 'image/svg+xml',
+        'X-Content-Type-Options': 'nosniff',
         'Cache-Control': 'public, max-age=300',
     });
 });
@@ -81,13 +92,16 @@ apiRouter.post('/pet', async (c) => {
     const { name, difficulty = 'normal' } = await c.req.parseBody();
     if (!name || typeof name !== 'string') return c.json({ error: 'Valid pet name required' }, 400);
 
+    const petName = sanitizePetName(name);
+    if (!petName) return c.json({ error: 'Valid pet name required' }, 400);
+
     const existingPet = await db.fetchPet(user.userId);
     if (existingPet) return c.redirect('/dashboard');
 
     await db.createPet({
         userId: user.userId,
-        name: name.substring(0, 20),
-        difficulty: difficulty as any,
+        name: petName,
+        difficulty: getSafeDifficulty(difficulty),
     });
 
     return c.redirect('/dashboard');
@@ -98,9 +112,17 @@ apiRouter.post('/pet/retire', async (c) => {
     if (!petId) return c.json({ error: 'Missing petId' }, 400);
 
     const db = new Database(c.env.DB);
+    const user = await getAuthUser(c, db);
+    if (!user) return c.redirect('/auth/login');
+
     try {
+        const pet = await db.fetchPetById(petId);
+        if (!pet || pet.userId !== user.userId) {
+            return c.json({ error: 'Pet not found' }, 404);
+        }
+
         const { retirePet } = await import('../pet/prestige');
-        const result = await retirePet(db, petId);
+        await retirePet(db, petId);
         return c.redirect('/dashboard');
     } catch (error) {
         return c.json({ error: (error as Error).message }, 400);
@@ -108,10 +130,9 @@ apiRouter.post('/pet/retire', async (c) => {
 });
 
 apiRouter.get('/locale', (c) => {
-    const lang = c.req.query('lang') || 'ko';
+    const lang = getSafeLocale(c.req.query('lang'));
     const referer = c.req.header('Referer') || '/';
-    
-    // Set cookie for 1 year
-    c.header('Set-Cookie', `lang=${lang}; Path=/; Max-Age=31536000; HttpOnly; SameSite=Lax`);
-    return c.redirect(referer);
+
+    setLocaleCookie(c, lang);
+    return c.redirect(safeRedirectPath(referer, c.req.url));
 });

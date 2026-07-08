@@ -3,6 +3,7 @@ import { setCookie } from 'hono/cookie';
 import { signSession } from '../shared/utils';
 import { Database } from '../shared/db';
 import { PetStage, PetTrait } from '../shared/types';
+import { escapeHtml, requireSameOrigin } from '../shared/security';
 
 type Bindings = {
     DB: D1Database;
@@ -10,6 +11,7 @@ type Bindings = {
 };
 
 const debugApp = new Hono<{ Bindings: Bindings }>({ strict: false });
+debugApp.use('*', requireSameOrigin);
 
 const MOCK_USER_ID = 'mock-user-123';
 const MOCK_USERNAME = 'demo_user';
@@ -25,7 +27,7 @@ debugApp.get('/login', async (c) => {
 
     setCookie(c, 'session', sessionId, {
         httpOnly: true,
-        secure: false,
+        secure: new URL(c.req.url).protocol === 'https:',
         sameSite: 'Lax',
         path: '/',
         maxAge: 60 * 60 * 24 * 30,
@@ -127,13 +129,14 @@ debugApp.get('/', async (c) => {
     const { renderPetCard } = await import('../card/renderer');
 
     const msg = c.req.query('msg');
+    const safeMsg = msg ? escapeHtml(msg) : '';
 
     const traits = ['lone_coder', 'collaborator', 'craftsman', 'architect', 'sprinter'];
     const stages = [2, 3, 4];
 
     let html = `
         <div style="max-width: 1200px; margin: 0 auto; padding: 2rem;">
-            ${msg ? `<div style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); color: #10b981; padding: 1rem; border-radius: 0.75rem; margin-bottom: 2rem; font-weight: 600;">✅ ${msg}</div>` : ''}
+            ${safeMsg ? `<div style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); color: #10b981; padding: 1rem; border-radius: 0.75rem; margin-bottom: 2rem; font-weight: 600;">✅ ${safeMsg}</div>` : ''}
 
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-bottom: 3rem;">
                 <!-- Live Preview -->
